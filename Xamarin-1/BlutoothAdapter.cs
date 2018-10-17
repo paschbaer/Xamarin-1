@@ -1,6 +1,7 @@
 ﻿using System;
-using Android.Bluetooth;
 using Android.Content;
+using Android.Bluetooth;
+
 
 namespace Core
 {
@@ -9,11 +10,14 @@ namespace Core
         protected BluetoothAdapter adapter;
         protected ScanCallBack scancallback;
 
-        public BlutoothAdapter()
+        public BlutoothAdapter(Android.Content.Context ctxApp)
         {
-            Context appCtx = Android.App.Application.Context;
-            BluetoothManager manager = (BluetoothManager)appCtx.GetSystemService(Context.BluetoothService);
-            adapter = manager.Adapter;
+            if (ctxApp != null)
+            {
+                BluetoothManager manager = (BluetoothManager)ctxApp.GetSystemService(Context.BluetoothService);
+                adapter = manager.Adapter;
+            }
+
         }
 
         public string GetName()

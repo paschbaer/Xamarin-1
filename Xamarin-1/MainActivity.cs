@@ -1,5 +1,7 @@
-﻿using Android.App;
+﻿using Android;
+using Android.App;
 using Android.OS;
+using Android.Content;
 using Android.Support.V7.App;
 using Android.Runtime;
 using Android.Widget;
@@ -10,6 +12,7 @@ namespace Xamarin_1
     public class MainActivity : AppCompatActivity
     {
         enum ScanState { start, stop };
+        enum PermissionRequestCode { REQUEST_BLUETOOTH = 1, REQUEST_BLUETOOTH_ADMIN, REQUEST_ACCESS_COARSE_LOCATION, REQUEST_ACCESS_FINE_LOCATION };
 
         protected override void OnCreate(Bundle savedInstanceState)
         {
@@ -22,8 +25,24 @@ namespace Xamarin_1
             TextView txtAdptName = FindViewById<TextView>(Resource.Id.BlutoothAdapterName);
             Button btScan = FindViewById<Button>(Resource.Id.StartScan);
 
-            // BluetoothAdapter
-            Core.BlutoothAdapter blu = new Core.BlutoothAdapter();
+            // Get App context
+            Context ctxApp = Android.App.Application.Context;
+
+            // Check permissions
+            if (Android.Support.V4.Content.ContextCompat.CheckSelfPermission(ctxApp, Manifest.Permission.Bluetooth) == Android.Content.PM.Permission.Denied)
+                Android.Support.V4.App.ActivityCompat.RequestPermissions(this, new string[] {Manifest.Permission.Bluetooth}, (int)PermissionRequestCode.REQUEST_BLUETOOTH);
+
+            if (Android.Support.V4.Content.ContextCompat.CheckSelfPermission(ctxApp, Manifest.Permission.BluetoothAdmin) == Android.Content.PM.Permission.Denied)
+                Android.Support.V4.App.ActivityCompat.RequestPermissions(this, new string[] { Manifest.Permission.BluetoothAdmin }, (int)PermissionRequestCode.REQUEST_BLUETOOTH_ADMIN);
+
+            if (Android.Support.V4.Content.ContextCompat.CheckSelfPermission(ctxApp, Manifest.Permission.AccessCoarseLocation) == Android.Content.PM.Permission.Denied)
+                Android.Support.V4.App.ActivityCompat.RequestPermissions(this, new string[] { Manifest.Permission.AccessCoarseLocation }, (int)PermissionRequestCode.REQUEST_ACCESS_COARSE_LOCATION);
+
+            if (Android.Support.V4.Content.ContextCompat.CheckSelfPermission(ctxApp, Manifest.Permission.AccessFineLocation) == Android.Content.PM.Permission.Denied)
+                Android.Support.V4.App.ActivityCompat.RequestPermissions(this, new string[] { Manifest.Permission.AccessFineLocation }, (int)PermissionRequestCode.REQUEST_ACCESS_FINE_LOCATION);
+
+            // Create BluetoothAdapter
+            Core.BlutoothAdapter blu = new Core.BlutoothAdapter(ctxApp);
 
             // Add code to handle button clicks
             btBlutoothAdapter.Click += (sender, e) =>
