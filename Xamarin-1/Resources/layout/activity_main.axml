@@ -17,4 +17,10 @@
         android:layout_height="wrap_content"
         android:layout_toRightOf="@id/BlutoothAdapter"
         android:id="@+id/BlutoothAdapterName" />
+    <Button
+        android:text="Start Scan"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/StartScan"
+        android:layout_below="@id/BlutoothAdapter" />
 </RelativeLayout>

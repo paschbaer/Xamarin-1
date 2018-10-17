@@ -9,6 +9,8 @@ namespace Xamarin_1
     [Activity(Label = "@string/app_name", Theme = "@style/AppTheme", MainLauncher = true)]
     public class MainActivity : AppCompatActivity
     {
+        enum ScanState { start, stop };
+
         protected override void OnCreate(Bundle savedInstanceState)
         {
             base.OnCreate(savedInstanceState);
@@ -18,15 +20,43 @@ namespace Xamarin_1
             // Get our UI controls from the loaded layout
             Button btBlutoothAdapter = FindViewById<Button>(Resource.Id.BlutoothAdapter);
             TextView txtAdptName = FindViewById<TextView>(Resource.Id.BlutoothAdapterName);
+            Button btScan = FindViewById<Button>(Resource.Id.StartScan);
+
+            // BluetoothAdapter
+            Core.BlutoothAdapter blu = new Core.BlutoothAdapter();
 
             // Add code to handle button clicks
             btBlutoothAdapter.Click += (sender, e) =>
             {
-                Core.BlutoothAdapter blu = new Core.BlutoothAdapter();
-                string strBtAdptName = blu.GetName();
-                txtAdptName.Text = strBtAdptName;
+                if (blu != null)
+                {
+                    string strBtAdptName = blu.GetName();
+                    txtAdptName.Text = strBtAdptName;
+                }
             };
-            
+
+            ScanState scanState = ScanState.start;
+
+            btScan.Click += (sender, e) =>
+            {
+                if (blu != null)
+                {
+                    if (scanState == ScanState.start)
+                    {
+                        if (blu.StartLeScan())
+                        {
+                            scanState = ScanState.stop;
+                            btScan.Text = "Stop Scan";
+                        }
+                    }
+                    else
+                    {
+                        blu.StopLeScan();
+                        scanState = ScanState.start;
+                        btScan.Text = "Start Scan";
+                    }
+                }
+            };
         }
     }
 }
