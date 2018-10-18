@@ -95,15 +95,20 @@ namespace Core
                 mapDevices.Add(deviceName, device);
                 listAdapter.Add(deviceName);
 
-                Android.Appwidget.AppWidgetManager widgetManager = Android.Appwidget.AppWidgetManager.GetInstance(Android.App.Application.Context);
-                //int[] appWidgetIds = widgetManager.GetAppWidgetIds(new ComponentName(Android.App.Application.Context, WidgetProvider.class));
-
-                widgetManager.NotifyAppWidgetViewDataChanged(Android.Appwidget.AppWidgetManager.InvalidAppwidgetId, textout.Id);
+                UpdateTextOut(textout);
             }
 
             //System.Threading.Thread.Sleep(1000);
             //device.Type == BluetoothDeviceType.Unknown
 
+        }
+
+        public void UpdateTextOut(Android.Widget.ListView textout)
+        {
+            Android.Appwidget.AppWidgetManager widgetManager = Android.Appwidget.AppWidgetManager.GetInstance(Android.App.Application.Context);
+            int[] appWidgetIds = widgetManager.GetAppWidgetIds(new ComponentName(Android.App.Application.Context, Java.Lang.Class.FromType(typeof(Android.Appwidget.AppWidgetProvider)).Name));
+
+            widgetManager.NotifyAppWidgetViewDataChanged(appWidgetIds, textout.Id);
         }
 
         public void Run()
