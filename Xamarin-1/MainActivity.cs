@@ -24,6 +24,7 @@ namespace Xamarin_1
             Button btBlutoothAdapter = FindViewById<Button>(Resource.Id.BlutoothAdapter);
             TextView txtAdptName = FindViewById<TextView>(Resource.Id.BlutoothAdapterName);
             Button btScan = FindViewById<Button>(Resource.Id.StartScan);
+            TextView txtDeviceAddr = FindViewById<TextView>(Resource.Id.BluetoothDeviceAddr);
 
             // Get App context
             Context ctxApp = Android.App.Application.Context;
@@ -62,7 +63,7 @@ namespace Xamarin_1
                 {
                     if (scanState == ScanState.start)
                     {
-                        if (blu.StartLeScan())
+                        if (blu.StartLeScan(txtAdptName))
                         {
                             scanState = ScanState.stop;
                             btScan.Text = "Stop Scan";

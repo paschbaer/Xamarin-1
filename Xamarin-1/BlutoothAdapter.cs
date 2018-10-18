@@ -33,13 +33,13 @@ namespace Core
             return "unknown";
         }
 
-        public bool StartLeScan()
+        public bool StartLeScan(Android.Widget.TextView textout)
         {
             if (adapter == null)
                 return false;
 
             if (scancallback == null)
-                scancallback = new ScanCallBack(adapter);
+                scancallback = new ScanCallBack(adapter, textout);
 
             if (scancallback != null)
             {
@@ -60,19 +60,27 @@ namespace Core
     public class ScanCallBack : Java.Lang.Object, Java.Lang.IRunnable, BluetoothAdapter.ILeScanCallback
     {
         private BluetoothAdapter adapter;
+        private Android.Widget.TextView textout;
 
-        public ScanCallBack(BluetoothAdapter adapter)
+        public ScanCallBack(BluetoothAdapter adapter, Android.Widget.TextView textout)
         {
             this.adapter = adapter;
+            this.textout = textout;
         }
 
         public void OnLeScan(BluetoothDevice device, int rssi, byte[] scanRecord)
         {
             string deviceName = device.Name;
-            if (device.Type == BluetoothDeviceType.Unknown)
-            {
-                deviceName = "unknown";
-            }
+            if (string.IsNullOrEmpty(device.Name))
+                textout.Text = device.Address;
+            else
+                textout.Text = device.Name;
+
+            //System.Threading.Thread.Sleep(1000);
+
+
+            //device.Type == BluetoothDeviceType.Unknown
+
         }
 
         public void Run()
