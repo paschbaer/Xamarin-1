@@ -40,6 +40,8 @@ namespace Core
 
             if (scancallback == null)
                 scancallback = new ScanCallBack(adapter, textout);
+            else
+                scancallback.Reset();
 
             if (scancallback != null)
             {
@@ -61,6 +63,7 @@ namespace Core
     {
         private BluetoothAdapter adapter;
         private Android.Widget.TextView textout;
+        private System.Collections.Generic.List<string> listDeviceName = new System.Collections.Generic.List<string>();
 
         public ScanCallBack(BluetoothAdapter adapter, Android.Widget.TextView textout)
         {
@@ -68,17 +71,27 @@ namespace Core
             this.textout = textout;
         }
 
+        public void Reset()
+        {
+            textout.Text = string.Empty;
+            listDeviceName.Clear();
+        }
+
         public void OnLeScan(BluetoothDevice device, int rssi, byte[] scanRecord)
         {
             string deviceName = device.Name;
             if (string.IsNullOrEmpty(device.Name))
-                textout.Text = device.Address;
-            else
-                textout.Text = device.Name;
+                deviceName = device.Address;
+
+            if (!listDeviceName.Contains(deviceName))
+            {
+                listDeviceName.Add(deviceName);
+
+                string line = string.Format("{0}\n", deviceName);
+                textout.Append(line);
+            }
 
             //System.Threading.Thread.Sleep(1000);
-
-
             //device.Type == BluetoothDeviceType.Unknown
 
         }

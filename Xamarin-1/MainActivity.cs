@@ -21,10 +21,10 @@ namespace Xamarin_1
             SetContentView(Resource.Layout.activity_main);
 
             // Get our UI controls from the loaded layout
-            Button btBlutoothAdapter = FindViewById<Button>(Resource.Id.BlutoothAdapter);
-            TextView txtAdptName = FindViewById<TextView>(Resource.Id.BlutoothAdapterName);
-            Button btScan = FindViewById<Button>(Resource.Id.StartScan);
-            TextView txtDeviceAddr = FindViewById<TextView>(Resource.Id.BluetoothDeviceAddr);
+            Button buttonBlutoothAdapter = FindViewById<Button>(Resource.Id.BlutoothAdapter);
+            TextView textAdptName = FindViewById<TextView>(Resource.Id.BlutoothAdapterName);
+            Button buttonStartScan = FindViewById<Button>(Resource.Id.StartScan);
+            TextView textDeviceAddr = FindViewById<TextView>(Resource.Id.BluetoothDeviceAddr);
 
             // Get App context
             Context ctxApp = Android.App.Application.Context;
@@ -46,34 +46,34 @@ namespace Xamarin_1
             Core.BlutoothAdapter blu = new Core.BlutoothAdapter(ctxApp);
 
             // Add code to handle button clicks
-            btBlutoothAdapter.Click += (sender, e) =>
+            buttonBlutoothAdapter.Click += (sender, e) =>
             {
                 if (blu != null)
                 {
                     string strBtAdptName = blu.GetName();
-                    txtAdptName.Text = strBtAdptName;
+                    textAdptName.Text = strBtAdptName;
                 }
             };
 
             ScanState scanState = ScanState.start;
 
-            btScan.Click += (sender, e) =>
+            buttonStartScan.Click += (sender, e) =>
             {
                 if (blu != null)
                 {
                     if (scanState == ScanState.start)
                     {
-                        if (blu.StartLeScan(txtAdptName))
+                        if (blu.StartLeScan(textDeviceAddr))
                         {
                             scanState = ScanState.stop;
-                            btScan.Text = "Stop Scan";
+                            buttonStartScan.Text = "Stop Scan";
                         }
                     }
                     else
                     {
                         blu.StopLeScan();
                         scanState = ScanState.start;
-                        btScan.Text = "Start Scan";
+                        buttonStartScan.Text = "Start Scan";
                     }
                 }
             };
