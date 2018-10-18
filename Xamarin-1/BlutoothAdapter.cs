@@ -39,10 +39,13 @@ namespace Core
                 return false;
 
             if (scancallback == null)
-                scancallback = new ScanCallBack();
+                scancallback = new ScanCallBack(adapter);
 
             if (scancallback != null)
-                return adapter.StartLeScan(scancallback);
+            {
+                scancallback.Run();
+                return true;
+            }
 
             return false;
         }
@@ -54,9 +57,14 @@ namespace Core
         }
     }
 
-    public class ScanCallBack : Java.Lang.Object, BluetoothAdapter.ILeScanCallback
+    public class ScanCallBack : Java.Lang.Object, Java.Lang.IRunnable, BluetoothAdapter.ILeScanCallback
     {
+        private BluetoothAdapter adapter;
 
+        public ScanCallBack(BluetoothAdapter adapter)
+        {
+            this.adapter = adapter;
+        }
 
         public void OnLeScan(BluetoothDevice device, int rssi, byte[] scanRecord)
         {
@@ -65,6 +73,11 @@ namespace Core
             {
                 deviceName = "unknown";
             }
+        }
+
+        public void Run()
+        {
+            adapter.StartLeScan(this);
         }
     }
 }
