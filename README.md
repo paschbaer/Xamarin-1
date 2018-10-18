@@ -9,5 +9,9 @@
 
 [Android Developer - Samples](https://developer.android.com/samples/)
 
-[Xamarin](https://docs.microsoft.com/en-us/xamarin/android/get-started/)
+[Xamarin - Android](https://docs.microsoft.com/en-us/xamarin/android/get-started/)
+
+[Xamarin - Android API](https://developer.xamarin.com/api/root/MonoAndroid-lib/)
+
+[Understanding Xamarin Layouts](https://developer.telerik.com/topics/mobile-development/understanding-xamarin-forms-layouts/)
 

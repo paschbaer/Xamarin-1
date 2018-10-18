@@ -63,7 +63,7 @@ namespace Core
     {
         private BluetoothAdapter adapter;
         private Android.Widget.TextView textout;
-        private System.Collections.Generic.List<string> listDeviceName = new System.Collections.Generic.List<string>();
+        private System.Collections.Generic.Dictionary<string, BluetoothDevice> mapDevices = new System.Collections.Generic.Dictionary<string, BluetoothDevice>();
 
         public ScanCallBack(BluetoothAdapter adapter, Android.Widget.TextView textout)
         {
@@ -74,7 +74,7 @@ namespace Core
         public void Reset()
         {
             textout.Text = string.Empty;
-            listDeviceName.Clear();
+            mapDevices.Clear();
         }
 
         public void OnLeScan(BluetoothDevice device, int rssi, byte[] scanRecord)
@@ -83,9 +83,9 @@ namespace Core
             if (string.IsNullOrEmpty(device.Name))
                 deviceName = device.Address;
 
-            if (!listDeviceName.Contains(deviceName))
+            if (!mapDevices.ContainsKey(deviceName))
             {
-                listDeviceName.Add(deviceName);
+                mapDevices.Add(deviceName, device);
 
                 string line = string.Format("{0}\n", deviceName);
                 textout.Append(line);
