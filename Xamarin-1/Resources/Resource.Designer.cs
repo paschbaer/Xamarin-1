@@ -2328,7 +2328,7 @@ namespace Xamarin_1
 			public const int ALT = 2131230770;
 			
 			// aapt resource value: 0x7f08008e
-			public const int BluetoothDeviceAddr = 2131230862;
+			public const int BluetoothDevices = 2131230862;
 			
 			// aapt resource value: 0x7f08008b
 			public const int BlutoothAdapter = 2131230859;

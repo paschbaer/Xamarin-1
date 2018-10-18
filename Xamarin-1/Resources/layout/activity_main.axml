@@ -23,10 +23,12 @@
         android:layout_height="wrap_content"
         android:id="@+id/StartScan"
         android:layout_below="@id/BlutoothAdapter" />
-    <TextView
+    <ListView
+        android:minWidth="25px"
+        android:minHeight="25px"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_toRightOf="@id/StartScan"
         android:layout_below="@id/BlutoothAdapter"
-        android:id="@+id/BluetoothDeviceAddr" />
+        android:id="@+id/BluetoothDevices" />
 </RelativeLayout>

@@ -1,6 +1,8 @@
 ﻿using System;
+using Android.App;
 using Android.Content;
 using Android.Bluetooth;
+using Android.Views;
 
 
 namespace Core
@@ -10,7 +12,7 @@ namespace Core
         protected BluetoothAdapter adapter;
         protected ScanCallBack scancallback;
 
-        public BlutoothAdapter(Android.Content.Context ctxApp)
+        public BlutoothAdapter(Context ctxApp)
         {
             if (ctxApp != null)
             {
@@ -33,13 +35,13 @@ namespace Core
             return "unknown";
         }
 
-        public bool StartLeScan(Android.Widget.TextView textout)
+        public bool StartLeScan(Activity activity, Android.Widget.ListView textout)
         {
             if (adapter == null)
                 return false;
 
             if (scancallback == null)
-                scancallback = new ScanCallBack(adapter, textout);
+                scancallback = new ScanCallBack(adapter, activity, textout);
             else
                 scancallback.Reset();
 
@@ -62,19 +64,24 @@ namespace Core
     public class ScanCallBack : Java.Lang.Object, Java.Lang.IRunnable, BluetoothAdapter.ILeScanCallback
     {
         private BluetoothAdapter adapter;
-        private Android.Widget.TextView textout;
+        private Android.Widget.ListView textout;
         private System.Collections.Generic.Dictionary<string, BluetoothDevice> mapDevices = new System.Collections.Generic.Dictionary<string, BluetoothDevice>();
+        private StringListAdapter listAdapter; 
 
-        public ScanCallBack(BluetoothAdapter adapter, Android.Widget.TextView textout)
+        public ScanCallBack(BluetoothAdapter adapter, Activity activity, Android.Widget.ListView textout)
         {
             this.adapter = adapter;
             this.textout = textout;
+
+            listAdapter = new StringListAdapter(activity);
+            this.textout.Adapter = listAdapter;
         }
 
         public void Reset()
         {
-            textout.Text = string.Empty;
+            //textout.Text = string.Empty;
             mapDevices.Clear();
+            listAdapter.Reset();
         }
 
         public void OnLeScan(BluetoothDevice device, int rssi, byte[] scanRecord)
@@ -86,9 +93,7 @@ namespace Core
             if (!mapDevices.ContainsKey(deviceName))
             {
                 mapDevices.Add(deviceName, device);
-
-                string line = string.Format("{0}\n", deviceName);
-                textout.Append(line);
+                listAdapter.Add(deviceName);
             }
 
             //System.Threading.Thread.Sleep(1000);
@@ -99,6 +104,53 @@ namespace Core
         public void Run()
         {
             adapter.StartLeScan(this);
+        }
+    }
+
+    public class StringListAdapter : Android.Widget.BaseAdapter<string>
+    {
+        private System.Collections.Generic.List<string> listValues = new System.Collections.Generic.List<string>();
+        private Activity activity;
+
+        public StringListAdapter(Activity activity) : base()
+        {
+            this.activity = activity;
+        }
+
+        public void Add(string value)
+        {
+            listValues.Add(value);
+        }
+
+        public void Reset()
+        {
+            listValues.Clear();
+        }
+
+        public override string this[int position]
+        {
+            get { return listValues[position]; }
+        }
+
+        public override int Count
+        {
+            get { return listValues.Count; }
+        }
+
+        public override long GetItemId(int position)
+        {
+            return position;
+        }
+
+        public override View GetView(int position, View convertView, ViewGroup parent)
+        {
+            View view = convertView;
+            if (view == null)
+                view = activity.LayoutInflater.Inflate(Android.Resource.Layout.SimpleListItem1, null);
+
+            view.FindViewById<Android.Widget.TextView>(Android.Resource.Id.Text1).Text = listValues[position];
+
+            return view;
         }
     }
 }
