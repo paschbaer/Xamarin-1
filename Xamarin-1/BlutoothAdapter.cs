@@ -94,6 +94,11 @@ namespace Core
             {
                 mapDevices.Add(deviceName, device);
                 listAdapter.Add(deviceName);
+
+                Android.Appwidget.AppWidgetManager widgetManager = Android.Appwidget.AppWidgetManager.GetInstance(Android.App.Application.Context);
+                //int[] appWidgetIds = widgetManager.GetAppWidgetIds(new ComponentName(Android.App.Application.Context, WidgetProvider.class));
+
+                widgetManager.NotifyAppWidgetViewDataChanged(Android.Appwidget.AppWidgetManager.InvalidAppwidgetId, textout.Id);
             }
 
             //System.Threading.Thread.Sleep(1000);
