@@ -59,6 +59,11 @@ namespace Core
             if ((scancallback != null) && (adapter != null))
                 adapter.StopLeScan(scancallback);
         }
+
+        public void EnumServices(string deviceName)
+        {
+
+        }
     }
 
     public class ScanCallBack : Java.Lang.Object, Java.Lang.IRunnable, BluetoothAdapter.ILeScanCallback

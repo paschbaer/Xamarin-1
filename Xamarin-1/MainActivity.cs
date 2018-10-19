@@ -77,6 +77,16 @@ namespace Xamarin_1
                     }
                 }
             };
+
+            listviewDevices.ItemClick += delegate (object sender, AdapterView.ItemClickEventArgs args)
+            {
+                if (blu != null)
+                {
+                    //Toast.MakeText(Application, ((TextView)args.View).Text, ToastLength.Short).Show();
+                    string deviceName = ((TextView)args.View).Text;
+                    blu.EnumServices(deviceName);
+                }
+            };
         }
     }
 }
