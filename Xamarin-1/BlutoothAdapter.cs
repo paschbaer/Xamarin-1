@@ -13,6 +13,7 @@ namespace Core
         public readonly static String TAG = typeof(BlutoothAdapter).Name;
         protected Context ctxApp;
         protected BluetoothAdapter adapter;
+        protected BluetoothGatt gatt;
         protected System.Collections.Generic.Dictionary<string, BluetoothDevice> mapDevices = new System.Collections.Generic.Dictionary<string, BluetoothDevice>();
         protected ScanCallBack scancallback;
 
@@ -72,7 +73,14 @@ namespace Core
             if (device != null)
             {
                 GattCallBack gattcallback = new GattCallBack(deviceName);
-                BluetoothGatt gatt = device.ConnectGatt(ctxApp, false, gattcallback);
+                if (gatt != null)
+                {
+                    //gatt.Disconnect();
+                    gatt.Close();   //or gatt.Connect() to re-connect to device
+                    gatt.Dispose();
+                }
+
+                gatt = device.ConnectGatt(ctxApp, false, gattcallback);
                 if (gatt == null)
                 {
                     Log.Error(TAG, string.Format("failed to connect to GATT server '{0}'", deviceName));
