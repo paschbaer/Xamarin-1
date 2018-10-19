@@ -3,12 +3,14 @@ using Android.App;
 using Android.Content;
 using Android.Bluetooth;
 using Android.Views;
-
+using Android.Util;
+using Android.Runtime;
 
 namespace Core
 {
     public class BlutoothAdapter
     {
+        public readonly static String TAG = typeof(BlutoothAdapter).Name;
         protected Context ctxApp;
         protected BluetoothAdapter adapter;
         protected System.Collections.Generic.Dictionary<string, BluetoothDevice> mapDevices = new System.Collections.Generic.Dictionary<string, BluetoothDevice>();
@@ -69,8 +71,17 @@ namespace Core
             BluetoothDevice device = mapDevices[deviceName];
             if (device != null)
             {
-                GattCallBack gattcallback = new GattCallBack();
+                GattCallBack gattcallback = new GattCallBack(deviceName);
                 BluetoothGatt gatt = device.ConnectGatt(ctxApp, false, gattcallback);
+                if (gatt != null)
+                {
+                    Log.Debug(TAG, string.Format("discover services of '{0}'", deviceName));
+                    gatt.DiscoverServices();
+                }
+                else
+                {
+                    Log.Error(TAG, string.Format("failed to connect to GATT server '{0}'", deviceName));
+                }
             }
         }
     }
@@ -132,7 +143,78 @@ namespace Core
 
     public class GattCallBack : BluetoothGattCallback
     {
+        public readonly static String TAG = typeof(BluetoothGattCallback).Name;
+        protected string gattServerName;
+        public GattCallBack(string deviceName)
+        {
+            gattServerName = deviceName;
+        }
 
+        public override void OnCharacteristicChanged(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic)
+        {
+            base.OnCharacteristicChanged(gatt, characteristic);
+        }
+
+        public override void OnCharacteristicRead(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, GattStatus status)
+        {
+            base.OnCharacteristicRead(gatt, characteristic, status);
+        }
+
+        public override void OnCharacteristicWrite(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, GattStatus status)
+        {
+            base.OnCharacteristicWrite(gatt, characteristic, status);
+        }
+        public override void OnConnectionStateChange(BluetoothGatt gatt, GattStatus status, ProfileState state)
+        {
+            if (state == ProfileState.Connected)
+                Log.Debug(TAG, string.Format("connected to GATT server '{0}'", gattServerName));
+            else if (state == ProfileState.Disconnected)
+                Log.Debug(TAG, string.Format("disconnected from GATT server '{0}'", gattServerName));
+
+            //base.OnConnectionStateChange(gatt, status, state);
+        }
+
+        public override void OnDescriptorRead(BluetoothGatt gatt, BluetoothGattDescriptor descriptor, GattStatus status)
+        {
+            base.OnDescriptorRead(gatt, descriptor, status);
+        }
+
+        public override void OnDescriptorWrite(BluetoothGatt gatt, BluetoothGattDescriptor descriptor, GattStatus status)
+        {
+            base.OnDescriptorWrite(gatt, descriptor, status);
+        }
+
+        public override void OnMtuChanged(BluetoothGatt gatt, Int32 mtu, GattStatus status)
+        {
+            base.OnMtuChanged(gatt, mtu, status);
+        }
+
+        public override void OnReadRemoteRssi(BluetoothGatt gatt, Int32 rssi, GattStatus status)
+        {
+            base.OnReadRemoteRssi(gatt, rssi, status);
+        }
+
+        public override void OnReliableWriteCompleted(BluetoothGatt gatt, GattStatus status)
+        {
+            base.OnReliableWriteCompleted(gatt, status);
+        }
+
+        public override void OnServicesDiscovered(BluetoothGatt gatt, GattStatus status)
+        {
+            if (status == GattStatus.Success)
+            {
+                Log.Debug(TAG, string.Format("services of '{0}' successfully retrieved", gattServerName));
+
+                foreach (BluetoothGattService service in gatt.Services)
+                {
+                    Log.Debug(TAG, string.Format("service.ToString({0}):  '{1}'", gattServerName, service.ToString()));
+                }
+            }
+            else if (status == GattStatus.Success)
+                Log.Error(TAG, string.Format("failed to retrieve services of '{0}'", gattServerName));
+
+            //base.OnServicesDiscovered(gatt, status);
+        }
     }
 
     public class StringListAdapter : Android.Widget.BaseAdapter<string>
