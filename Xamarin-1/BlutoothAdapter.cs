@@ -105,10 +105,8 @@ namespace Core
 
         public void UpdateTextOut(Android.Widget.ListView textout)
         {
-            Android.Appwidget.AppWidgetManager widgetManager = Android.Appwidget.AppWidgetManager.GetInstance(Android.App.Application.Context);
-            int[] appWidgetIds = widgetManager.GetAppWidgetIds(new ComponentName(Android.App.Application.Context, Java.Lang.Class.FromType(typeof(Android.Appwidget.AppWidgetProvider)).Name));
-
-            widgetManager.NotifyAppWidgetViewDataChanged(appWidgetIds, textout.Id);
+            textout.Adapter = null;
+            textout.Adapter = listAdapter;
         }
 
         public void Run()
