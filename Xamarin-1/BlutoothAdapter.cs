@@ -9,13 +9,17 @@ namespace Core
 {
     public class BlutoothAdapter
     {
+        protected Context ctxApp;
         protected BluetoothAdapter adapter;
+        protected System.Collections.Generic.Dictionary<string, BluetoothDevice> mapDevices = new System.Collections.Generic.Dictionary<string, BluetoothDevice>();
         protected ScanCallBack scancallback;
 
         public BlutoothAdapter(Context ctxApp)
         {
             if (ctxApp != null)
             {
+                this.ctxApp = ctxApp;
+
                 BluetoothManager manager = (BluetoothManager)ctxApp.GetSystemService(Context.BluetoothService);
                 adapter = manager.Adapter;
             }
@@ -41,7 +45,7 @@ namespace Core
                 return false;
 
             if (scancallback == null)
-                scancallback = new ScanCallBack(adapter, activity, textout);
+                scancallback = new ScanCallBack(adapter, activity, mapDevices, textout);
             else
                 scancallback.Reset();
 
@@ -62,26 +66,32 @@ namespace Core
 
         public void EnumServices(string deviceName)
         {
-
+            BluetoothDevice device = mapDevices[deviceName];
+            if (device != null)
+            {
+                GattCallBack gattcallback = new GattCallBack();
+                BluetoothGatt gatt = device.ConnectGatt(ctxApp, false, gattcallback);
+            }
         }
     }
 
     public class ScanCallBack : Java.Lang.Object, Java.Lang.IRunnable, BluetoothAdapter.ILeScanCallback
     {
         private BluetoothAdapter adapter;
+        private System.Collections.Generic.Dictionary<string, BluetoothDevice> mapDevices;
         private Android.Widget.ListView textout;
-        private System.Collections.Generic.Dictionary<string, BluetoothDevice> mapDevices = new System.Collections.Generic.Dictionary<string, BluetoothDevice>();
         private StringListAdapter listAdapter; 
 
-        public ScanCallBack(BluetoothAdapter adapter, Activity activity, Android.Widget.ListView textout)
+        public ScanCallBack(BluetoothAdapter adapter, Activity activity, System.Collections.Generic.Dictionary<string, BluetoothDevice> mapDevices, Android.Widget.ListView textout)
         {
             this.adapter = adapter;
+            this.mapDevices = mapDevices;
             this.textout = textout;
 
             listAdapter = new StringListAdapter(activity);
             this.textout.Adapter = listAdapter;
         }
-
+            
         public void Reset()
         {
             //textout.Text = string.Empty;
@@ -118,6 +128,11 @@ namespace Core
         {
             adapter.StartLeScan(this);
         }
+    }
+
+    public class GattCallBack : BluetoothGattCallback
+    {
+
     }
 
     public class StringListAdapter : Android.Widget.BaseAdapter<string>

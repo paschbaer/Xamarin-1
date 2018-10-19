@@ -15,3 +15,5 @@
 
 [Understanding Xamarin Layouts](https://developer.telerik.com/topics/mobile-development/understanding-xamarin-forms-layouts/)
 
+[C# sample - how to find, connect to, and display data from supported BLE devices](https://github.com/xamarin/monodroid-samples/tree/master/BluetoothLeGatt)
+
