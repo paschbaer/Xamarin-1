@@ -73,12 +73,7 @@ namespace Core
             {
                 GattCallBack gattcallback = new GattCallBack(deviceName);
                 BluetoothGatt gatt = device.ConnectGatt(ctxApp, false, gattcallback);
-                if (gatt != null)
-                {
-                    Log.Debug(TAG, string.Format("discover services of '{0}'", deviceName));
-                    gatt.DiscoverServices();
-                }
-                else
+                if (gatt == null)
                 {
                     Log.Error(TAG, string.Format("failed to connect to GATT server '{0}'", deviceName));
                 }
@@ -167,7 +162,14 @@ namespace Core
         public override void OnConnectionStateChange(BluetoothGatt gatt, GattStatus status, ProfileState state)
         {
             if (state == ProfileState.Connected)
+            {
                 Log.Debug(TAG, string.Format("connected to GATT server '{0}'", gattServerName));
+                if (gatt != null)
+                {
+                    Log.Debug(TAG, string.Format("discover services of '{0}'", gattServerName));
+                    gatt.DiscoverServices();
+                }
+            }
             else if (state == ProfileState.Disconnected)
                 Log.Debug(TAG, string.Format("disconnected from GATT server '{0}'", gattServerName));
 
