@@ -17,3 +17,10 @@
 
 [C# sample - how to find, connect to, and display data from supported BLE devices](https://github.com/xamarin/monodroid-samples/tree/master/BluetoothLeGatt)
 
+[Bluetooth Spec. - Service Discovery](https://www.bluetooth.com/specifications/assigned-numbers/service-discovery)
+
+[Bluetooth Spec. - GATT Services](https://www.bluetooth.com/specifications/gatt/services)
+
+[Bluetooth Spec. - GATT Characteristics](https://www.bluetooth.com/specifications/gatt/characteristics)
+
+

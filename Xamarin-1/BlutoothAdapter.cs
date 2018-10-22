@@ -217,13 +217,31 @@ namespace Core
 
                 foreach (BluetoothGattService service in gatt.Services)
                 {
-                    Log.Debug(TAG, string.Format("service.ToString({0}):  '{1}'", gattServerName, service.ToString()));
+                    Log.Debug(TAG, string.Format("{0} - service's UUID: '0x{1:X}'", gattServerName, GetAssignedNumber(service.Uuid)));
+                    foreach (BluetoothGattCharacteristic characteristic in service.Characteristics)
+                    {
+                        Log.Debug(TAG, 
+                            string.Format("{0} - service's UUID: '0x{1:X} - characteristic's UUI : '0x{2:X}'",
+                            gattServerName, 
+                            GetAssignedNumber(service.Uuid), 
+                            GetAssignedNumber(characteristic.Uuid)));
+
+                        if (GetAssignedNumber(characteristic.Uuid) == 0x2A00)   //org.bluetooth.characteristic.gap.device_name
+                            Log.Debug(TAG, string.Format("device name: '{0}'", characteristic.GetStringValue(0)));
+
+                    }
                 }
             }
             else if (status == GattStatus.Success)
                 Log.Error(TAG, string.Format("failed to retrieve services of '{0}'", gattServerName));
 
             //base.OnServicesDiscovered(gatt, status);
+        }
+
+        public static int GetAssignedNumber(Java.Util.UUID uuid)
+        {
+            // Keep only the significant bits of the UUID
+            return (int)((uuid.MostSignificantBits & 0x0000FFFF00000000L) >> 32);
         }
     }
 
