@@ -221,12 +221,12 @@ namespace Core
                     foreach (BluetoothGattCharacteristic characteristic in service.Characteristics)
                     {
                         Log.Debug(TAG, 
-                            string.Format("{0} - service's UUID: '0x{1:X} - characteristic's UUI : '0x{2:X}'",
-                            gattServerName, 
-                            GetAssignedNumber(service.Uuid), 
-                            GetAssignedNumber(characteristic.Uuid)));
+                            string.Format("{0} - service's UUID: '0x{1:X} - characteristic's UUID : '0x{2:X}'",
+                            gattServerName,
+                            BlutoothService.GetAssignedNumber(service.Uuid),
+                            BlutoothService.GetAssignedNumber(characteristic.Uuid)));
 
-                        if (GetAssignedNumber(characteristic.Uuid) == 0x2A00)   //org.bluetooth.characteristic.gap.device_name
+                        if (BlutoothService.GetAssignedNumber(characteristic.Uuid) == 0x2A00)   //org.bluetooth.characteristic.gap.device_name
                             Log.Debug(TAG, string.Format("device name: '{0}'", characteristic.GetStringValue(0)));
 
                     }
@@ -236,12 +236,6 @@ namespace Core
                 Log.Error(TAG, string.Format("failed to retrieve services of '{0}'", gattServerName));
 
             //base.OnServicesDiscovered(gatt, status);
-        }
-
-        public static int GetAssignedNumber(Java.Util.UUID uuid)
-        {
-            // Keep only the significant bits of the UUID
-            return (int)((uuid.MostSignificantBits & 0x0000FFFF00000000L) >> 32);
         }
     }
 
@@ -289,6 +283,71 @@ namespace Core
             view.FindViewById<Android.Widget.TextView>(Android.Resource.Id.Text1).Text = listValues[position];
 
             return view;
+        }
+    }
+
+    public class BlutoothDevice
+    {
+        public GenericAccessService genericAccess;
+
+        public void EvaluateService(BluetoothGattService service)
+        {
+            if (BlutoothService.GetAssignedNumber(service.Uuid) == 0x1800)  //org.bluetooth.service.generic_access
+            {
+                genericAccess = new GenericAccessService(service);
+            }
+        }
+    }
+
+    public abstract class BlutoothService
+    {
+        public static int GetAssignedNumber(Java.Util.UUID uuid)
+        {
+            // Keep only the significant bits of the UUID
+            return (int)((uuid.MostSignificantBits & 0x0000FFFF00000000L) >> 32);
+        }
+
+        public static void DebugLog(BluetoothGattService service, string serviceName)
+        {
+            if (service != null)
+            {
+                foreach (BluetoothGattCharacteristic characteristic in service.Characteristics)
+                {
+                    Log.Debug(serviceName, string.Format("'0x{0:X}: characteristic's UUID : '0x{1:X}'", GetAssignedNumber(service.Uuid), GetAssignedNumber(characteristic.Uuid)));
+                }
+            }
+        }
+
+        public abstract string GetName();
+
+    }
+
+    public class GenericAccessService : BlutoothService
+    {
+        public readonly static String TAG = "GenericAccessService";
+
+        public readonly string deviceName;
+        public readonly Int16 appearance;
+
+
+        public GenericAccessService(BluetoothGattService service)
+        {
+            if (service != null)
+            {
+                foreach (BluetoothGattCharacteristic characteristic in service.Characteristics)
+                {
+                    if (BlutoothService.GetAssignedNumber(characteristic.Uuid) == 0x2A00)   //org.bluetooth.characteristic.gap.device_name
+                         deviceName = BitConverter.ToString(characteristic.GetValue());
+
+                    if (BlutoothService.GetAssignedNumber(characteristic.Uuid) == 0x2A01)   //org.bluetooth.characteristic.gap.appearance
+                        appearance = BitConverter.ToInt16(characteristic.GetValue(), 0);
+                }
+            }
+        }
+
+        public override string GetName()
+        {
+            return TAG;
         }
     }
 }
