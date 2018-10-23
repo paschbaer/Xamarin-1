@@ -11,6 +11,7 @@ namespace Core
     public class BlutoothAdapter
     {
         public readonly static String TAG = typeof(BlutoothAdapter).Name;
+
         protected Context ctxApp;
         protected BluetoothAdapter adapter;
         protected BluetoothGatt gatt;
@@ -215,22 +216,9 @@ namespace Core
             {
                 Log.Debug(TAG, string.Format("services of '{0}' successfully retrieved", gattServerName));
 
-                foreach (BluetoothGattService service in gatt.Services)
-                {
-                    Log.Debug(TAG, string.Format("{0} - service's UUID: '0x{1:X}'", gattServerName, GetAssignedNumber(service.Uuid)));
-                    foreach (BluetoothGattCharacteristic characteristic in service.Characteristics)
-                    {
-                        Log.Debug(TAG, 
-                            string.Format("{0} - service's UUID: '0x{1:X} - characteristic's UUID : '0x{2:X}'",
-                            gattServerName,
-                            BlutoothService.GetAssignedNumber(service.Uuid),
-                            BlutoothService.GetAssignedNumber(characteristic.Uuid)));
+                BlutoothDevice.EnumServices(gatt);
 
-                        if (BlutoothService.GetAssignedNumber(characteristic.Uuid) == 0x2A00)   //org.bluetooth.characteristic.gap.device_name
-                            Log.Debug(TAG, string.Format("device name: '{0}'", characteristic.GetStringValue(0)));
-
-                    }
-                }
+                BlutoothDevice device = new BlutoothDevice(gatt);
             }
             else if (status == GattStatus.Success)
                 Log.Error(TAG, string.Format("failed to retrieve services of '{0}'", gattServerName));
@@ -288,15 +276,27 @@ namespace Core
 
     public class BlutoothDevice
     {
+        public readonly static String TAG = typeof(BlutoothDevice).Name;
+
         public GenericAccessService genericAccess;
 
-        public void EvaluateService(BluetoothGattService service)
+        protected static Java.Util.UUID SERVICE_GENERIC_ACCESS = Java.Util.UUID.FromString("00001800-0000-1000-8000-00805f9b34fb");    //org.bluetooth.service.generic_access
+
+        public BlutoothDevice(BluetoothGatt gatt)
         {
-            if (BlutoothService.GetAssignedNumber(service.Uuid) == 0x1800)  //org.bluetooth.service.generic_access
-            {
+            BluetoothGattService service = gatt.GetService(SERVICE_GENERIC_ACCESS);
+            if (service != null)
                 genericAccess = new GenericAccessService(service);
+        }
+
+        public static void EnumServices(BluetoothGatt gatt)
+        {
+            foreach (BluetoothGattService service in gatt.Services)
+            {
+                Log.Debug(TAG, string.Format("UUID: '0x{0:X}'",  BlutoothService.GetAssignedNumber(service.Uuid)));
             }
         }
+
     }
 
     public abstract class BlutoothService
@@ -307,7 +307,7 @@ namespace Core
             return (int)((uuid.MostSignificantBits & 0x0000FFFF00000000L) >> 32);
         }
 
-        public static void DebugLog(BluetoothGattService service, string serviceName)
+        public static void Dump(BluetoothGattService service, string serviceName)
         {
             if (service != null)
             {
@@ -324,7 +324,7 @@ namespace Core
 
     public class GenericAccessService : BlutoothService
     {
-        public readonly static String TAG = "GenericAccessService";
+        public readonly static String TAG = typeof(GenericAccessService).Name;
 
         public readonly string deviceName;
         public readonly Int16 appearance;
@@ -337,10 +337,18 @@ namespace Core
                 foreach (BluetoothGattCharacteristic characteristic in service.Characteristics)
                 {
                     if (BlutoothService.GetAssignedNumber(characteristic.Uuid) == 0x2A00)   //org.bluetooth.characteristic.gap.device_name
-                         deviceName = BitConverter.ToString(characteristic.GetValue());
+                    {
+                        byte[] value = characteristic.GetValue();
+                        if (value != null)
+                            deviceName = BitConverter.ToString(value);
+                    }
 
                     if (BlutoothService.GetAssignedNumber(characteristic.Uuid) == 0x2A01)   //org.bluetooth.characteristic.gap.appearance
-                        appearance = BitConverter.ToInt16(characteristic.GetValue(), 0);
+                    {
+                        byte[] value = characteristic.GetValue();
+                        if (value != null)
+                            appearance = BitConverter.ToInt16(value, 0);
+                    }
                 }
             }
         }
