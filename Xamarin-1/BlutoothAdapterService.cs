@@ -19,13 +19,10 @@ namespace Blu
         public readonly static String TAG = typeof(BlutoothAdapterService).Name;
 
         public IBinder binder { get; private set; }
-        protected Context ctx;
         protected BlutoothAdapter blu;
 
-        public BlutoothAdapterService(Context ctxApp)
-        {
-            ctx = ctxApp;
-        }
+        public BlutoothAdapterService()
+        {}
 
         public override IBinder OnBind(Intent intent)
         {
@@ -43,7 +40,7 @@ namespace Blu
             base.OnCreate();
 
             binder = null;
-            blu = new Blu.BlutoothAdapter(ctx);
+            blu = new Blu.BlutoothAdapter();
         }
 
         public override void OnDestroy()
@@ -76,10 +73,10 @@ namespace Blu
                 blu.StopLeScan();
         }
 
-        public void EnumServices(string identifier)
+        public void EnumServices(Context ctx, string identifier)
         {
             if(blu != null)
-                blu.EnumServices(identifier);
+                blu.EnumServices(ctx, identifier);
         }
     }
 
@@ -158,7 +155,7 @@ namespace Blu
         public void EnumServices(string identifier)
         {
             if (isConnected)
-                binder.service.EnumServices(identifier);
+                binder.service.EnumServices(mainActivity.ApplicationContext, identifier);
         }
     }
 

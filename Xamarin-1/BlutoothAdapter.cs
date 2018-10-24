@@ -12,23 +12,13 @@ namespace Blu
     {
         public readonly static String TAG = typeof(BlutoothAdapter).Name;
 
-        protected Context ctxApp;
         protected BluetoothAdapter adapter;
         protected BluetoothGatt gatt;
         protected System.Collections.Generic.Dictionary<string, BluetoothDevice> mapDevices = new System.Collections.Generic.Dictionary<string, BluetoothDevice>();
         protected ScanCallBack scancallback;
 
-        public BlutoothAdapter(Context ctxApp)
-        {
-            if (ctxApp != null)
-            {
-                this.ctxApp = ctxApp;
-
-                BluetoothManager manager = (BluetoothManager)ctxApp.GetSystemService(Context.BluetoothService);
-                adapter = manager.Adapter;
-            }
-
-        }
+        public BlutoothAdapter()
+        {}
 
         public string GetName()
         {
@@ -46,7 +36,10 @@ namespace Blu
         public bool StartLeScan(Activity activity, Android.Widget.ListView textout)
         {
             if (adapter == null)
-                return false;
+            {
+                BluetoothManager manager = (BluetoothManager)activity.ApplicationContext.GetSystemService(Context.BluetoothService);
+                adapter = manager.Adapter;
+            }
 
             if (scancallback == null)
                 scancallback = new ScanCallBack(adapter, activity, mapDevices, textout);
@@ -68,7 +61,7 @@ namespace Blu
                 adapter.StopLeScan(scancallback);
         }
 
-        public void EnumServices(string identifer)
+        public void EnumServices(Context ctx, string identifer)
         {
             BluetoothDevice device = mapDevices[identifer];
             if (device != null)
@@ -81,7 +74,7 @@ namespace Blu
                     gatt.Dispose();
                 }
 
-                gatt = device.ConnectGatt(ctxApp, false, gattdevice);
+                gatt = device.ConnectGatt(ctx, false, gattdevice);
                 if (gatt == null)
                 {
                     Log.Error(TAG, string.Format("failed to connect to GATT server '{0}'", identifer));
