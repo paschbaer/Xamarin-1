@@ -55,7 +55,7 @@ namespace Core
 
             if (scancallback != null)
             {
-                scancallback.Run();
+                System.Threading.ThreadPool.QueueUserWorkItem(o => scancallback.Run());
                 return true;
             }
 
@@ -90,7 +90,7 @@ namespace Core
         }
     }
 
-    public class ScanCallBack : Java.Lang.Object, Java.Lang.IRunnable, BluetoothAdapter.ILeScanCallback
+    public class ScanCallBack : Java.Lang.Object, BluetoothAdapter.ILeScanCallback
     {
         private BluetoothAdapter adapter;
         private System.Collections.Generic.Dictionary<string, BluetoothDevice> mapDevices;
