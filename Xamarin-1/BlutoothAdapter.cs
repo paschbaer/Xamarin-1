@@ -162,6 +162,8 @@ namespace Blu
 
         public void Initialize(BluetoothGatt gatt)
         {
+            EnumServices(gatt);
+
             BluetoothGattService service = gatt.GetService(SERVICE_GENERIC_ACCESS);
             if (service != null)
             {
@@ -235,9 +237,8 @@ namespace Blu
             if (status == GattStatus.Success)
             {
                 Log.Debug(TAG, string.Format("services of '{0}' successfully retrieved", gattServerName));
-                EnumServices(gatt);
-
-                Initialize(gatt);
+                
+                System.Threading.ThreadPool.QueueUserWorkItem(o => Initialize(gatt)); //Initialize(gatt);
             }
             else if (status == GattStatus.Success)
                 Log.Error(TAG, string.Format("failed to retrieve services of '{0}'", gattServerName));
@@ -264,6 +265,8 @@ namespace Blu
         public void Reset()
         {
             listValues.Clear();
+            NotifyDataSetChanged();
+
         }
 
         public override string this[int position]
