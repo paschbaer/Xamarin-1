@@ -9,9 +9,9 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-[assembly: global::Android.Runtime.ResourceDesignerAttribute("Xamarin_1.Resource", IsApplication=true)]
+[assembly: global::Android.Runtime.ResourceDesignerAttribute("Blu.Resource", IsApplication=true)]
 
-namespace Xamarin_1
+namespace Blu
 {
 	
 	

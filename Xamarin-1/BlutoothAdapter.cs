@@ -6,7 +6,7 @@ using Android.Views;
 using Android.Util;
 using Android.Runtime;
 
-namespace Core
+namespace Blu
 {
     public class BlutoothAdapter
     {
@@ -327,8 +327,8 @@ namespace Core
     {
         public readonly static String TAG = typeof(GenericAccessService).Name;
 
-        public string deviceName;
-        public Int16 appearance;
+        public string deviceName { get; private set; }
+        public Int16 appearance { get; private set; }
 
 
         public GenericAccessService(BluetoothGatt gatt, BluetoothGattService service)

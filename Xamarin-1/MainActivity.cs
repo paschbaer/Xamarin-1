@@ -6,13 +6,15 @@ using Android.Support.V7.App;
 using Android.Runtime;
 using Android.Widget;
 
-namespace Xamarin_1
+namespace Blu
 {
     [Activity(Label = "@string/app_name", Theme = "@style/AppTheme", MainLauncher = true)]
     public class MainActivity : AppCompatActivity
     {
         enum ScanState { start, stop };
         enum PermissionRequestCode { REQUEST_BLUETOOTH = 1, REQUEST_BLUETOOTH_ADMIN, REQUEST_ACCESS_COARSE_LOCATION, REQUEST_ACCESS_FINE_LOCATION };
+
+        BlutoothAdapterServiceConnection serviceConnection;
 
         protected override void OnCreate(Bundle savedInstanceState)
         {
@@ -27,7 +29,8 @@ namespace Xamarin_1
             ListView listviewDevices = FindViewById<ListView>(Resource.Id.BluetoothDevices);
 
             // Get App context
-            Context ctxApp = Android.App.Application.Context;
+            Context ctxApp = Android.App.Application.Context;   //this.ApplicationContext
+
 
             // Check permissions
             if (Android.Support.V4.Content.ContextCompat.CheckSelfPermission(ctxApp, Manifest.Permission.Bluetooth) == Android.Content.PM.Permission.Denied)
@@ -42,15 +45,19 @@ namespace Xamarin_1
             if (Android.Support.V4.Content.ContextCompat.CheckSelfPermission(ctxApp, Manifest.Permission.AccessFineLocation) == Android.Content.PM.Permission.Denied)
                 Android.Support.V4.App.ActivityCompat.RequestPermissions(this, new string[] { Manifest.Permission.AccessFineLocation }, (int)PermissionRequestCode.REQUEST_ACCESS_FINE_LOCATION);
 
-            // Create BluetoothAdapter
-            Core.BlutoothAdapter blu = new Core.BlutoothAdapter(ctxApp);
+            // Create BluetoothAdapterService connection
+            if (serviceConnection == null)
+                serviceConnection = new BlutoothAdapterServiceConnection(this);
+
+            Intent serviceToStart = new Intent(this, typeof(BlutoothAdapterService));
+            BindService(serviceToStart, serviceConnection, Bind.AutoCreate);
 
             // Add code to handle button clicks
             buttonBlutoothAdapter.Click += (sender, e) =>
             {
-                if (blu != null)
+                if (serviceConnection != null)
                 {
-                    string strBtAdptName = blu.GetName();
+                    string strBtAdptName = serviceConnection.GetName();
                     textAdptName.Text = strBtAdptName;
                 }
             };
@@ -59,11 +66,11 @@ namespace Xamarin_1
 
             buttonStartScan.Click += (sender, e) =>
             {
-                if (blu != null)
+                if (serviceConnection != null)
                 {
                     if (scanState == ScanState.start)
                     {
-                        if (blu.StartLeScan(this, listviewDevices))
+                        if (serviceConnection.StartLeScan(this, listviewDevices))
                         {
                             scanState = ScanState.stop;
                             buttonStartScan.Text = "Stop Scan";
@@ -71,7 +78,7 @@ namespace Xamarin_1
                     }
                     else
                     {
-                        blu.StopLeScan();
+                        serviceConnection.StopLeScan();
                         scanState = ScanState.start;
                         buttonStartScan.Text = "Start Scan";
                     }
@@ -80,11 +87,11 @@ namespace Xamarin_1
 
             listviewDevices.ItemClick += delegate (object sender, AdapterView.ItemClickEventArgs args)
             {
-                if (blu != null)
+                if (serviceConnection != null)
                 {
                     //Toast.MakeText(Application, ((TextView)args.View).Text, ToastLength.Short).Show();
                     string deviceName = ((TextView)args.View).Text;
-                    blu.EnumServices(deviceName);
+                    serviceConnection.EnumServices(deviceName);
                 }
             };
         }
