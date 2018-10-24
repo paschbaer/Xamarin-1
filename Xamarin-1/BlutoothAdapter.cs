@@ -73,7 +73,7 @@ namespace Core
             BluetoothDevice device = mapDevices[identifer];
             if (device != null)
             {
-               GattDevice gattdevice = new GattDevice(identifer);
+                GattDevice gattdevice = new GattDevice(identifer);
                 if (gatt != null)
                 {
                     //gatt.Disconnect();
@@ -171,7 +171,10 @@ namespace Core
         {
             BluetoothGattService service = gatt.GetService(SERVICE_GENERIC_ACCESS);
             if (service != null)
+            {
+                BlutoothService.Dump(service, gattServerName);
                 genericAccess = new GenericAccessService(gatt, service);
+            }
         }
 
         public override void OnCharacteristicChanged(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic)
@@ -239,6 +242,7 @@ namespace Core
             if (status == GattStatus.Success)
             {
                 Log.Debug(TAG, string.Format("services of '{0}' successfully retrieved", gattServerName));
+                EnumServices(gatt);
 
                 Initialize(gatt);
             }
