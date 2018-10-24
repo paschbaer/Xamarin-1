@@ -66,7 +66,7 @@ namespace Blu
             BluetoothDevice device = mapDevices[identifer];
             if (device != null)
             {
-                GattDevice gattdevice = new GattDevice(identifer);
+                GattDevice gattdevice = new GattDevice(ctx, identifer);
                 if (gatt != null)
                 {
                     //gatt.Disconnect();
@@ -144,6 +144,7 @@ namespace Blu
 
         public GenericAccessService genericAccess;
 
+        protected Context ctx;
         protected string gattServerName;
         protected static Java.Util.UUID SERVICE_GENERIC_ACCESS = Java.Util.UUID.FromString("00001800-0000-1000-8000-00805f9b34fb");    //org.bluetooth.service.generic_access
         
@@ -155,8 +156,9 @@ namespace Blu
             }
         }
 
-        public GattDevice(string identifier)
+        public GattDevice(Context ctx, string identifier)
         {
+            this.ctx = ctx;
             gattServerName = identifier;
         }
 
@@ -183,7 +185,13 @@ namespace Blu
             {
                 if (genericAccess != null)
                     genericAccess.ReadCharacteristic(characteristic);
+
             }
+
+            Intent message = new Intent("com.xamarin.example.BLU");
+            // If desired, pass some values to the broadcast receiver.
+            message.PutExtra("key", "value");
+            Android.Support.V4.Content.LocalBroadcastManager.GetInstance(ctx).SendBroadcast(message);
         }
 
         public override void OnCharacteristicWrite(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, GattStatus status)
@@ -331,6 +339,8 @@ namespace Blu
         {
             if (service != null)
             {
+                service.GetCharacteristic()
+
                 foreach (BluetoothGattCharacteristic characteristic in service.Characteristics)
                 {
                     gatt.ReadCharacteristic(characteristic);
@@ -353,6 +363,7 @@ namespace Blu
                 if (value != null)
                     appearance = BitConverter.ToInt16(value, 0);
             }
+
         }
 
         public override string GetName()

@@ -159,5 +159,16 @@ namespace Blu
         }
     }
 
+    [BroadcastReceiver(Enabled = true, Exported = false)]
+    [IntentFilter(new[] { "com.xamarin.example.BLU" })]
+    public class SampleReceiver : BroadcastReceiver
+    {
+        public override void OnReceive(Context context, Intent intent)
+        {
+            // Do stuff here.
+
+            String value = intent.GetStringExtra("key");
+        }
+    }
 
 }

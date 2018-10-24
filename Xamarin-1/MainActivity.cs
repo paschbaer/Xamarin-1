@@ -15,6 +15,7 @@ namespace Blu
         enum PermissionRequestCode { REQUEST_BLUETOOTH = 1, REQUEST_BLUETOOTH_ADMIN, REQUEST_ACCESS_COARSE_LOCATION, REQUEST_ACCESS_FINE_LOCATION };
 
         BlutoothAdapterServiceConnection serviceConnection;
+        SampleReceiver receiver;
 
         protected override void OnCreate(Bundle savedInstanceState)
         {
@@ -44,6 +45,9 @@ namespace Blu
 
             if (Android.Support.V4.Content.ContextCompat.CheckSelfPermission(ctxApp, Manifest.Permission.AccessFineLocation) == Android.Content.PM.Permission.Denied)
                 Android.Support.V4.App.ActivityCompat.RequestPermissions(this, new string[] { Manifest.Permission.AccessFineLocation }, (int)PermissionRequestCode.REQUEST_ACCESS_FINE_LOCATION);
+
+            receiver = new SampleReceiver();
+            Android.Support.V4.Content.LocalBroadcastManager.GetInstance(this). RegisterReceiver(receiver, new IntentFilter("com.xamarin.example.BLU"));
 
             // Create BluetoothAdapterService connection
             if (serviceConnection == null)
