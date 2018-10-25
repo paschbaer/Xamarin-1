@@ -138,13 +138,11 @@ namespace Blu
     {
         public readonly static String TAG = typeof(GattDevice).Name;
 
-        //public GenericAccessService genericAccess;
-        protected SampleService sampleService;
-
         protected Context ctx;
         protected string gattServerName;
 
-        protected int index = 0; 
+        protected int idxService = 0; 
+        protected int idxCharacteristic = 0;
 
         protected static Java.Util.UUID SERVICE_GENERIC_ACCESS = Java.Util.UUID.FromString("00001800-0000-1000-8000-00805f9b34fb");    //org.bluetooth.service.generic_access
 
@@ -152,40 +150,27 @@ namespace Blu
         {
             this.ctx = ctx;
             gattServerName = identifier;
-            index = 0;
+            idxService = 0;
+            idxCharacteristic = 0;
         }
 
-        protected virtual void ReadService(BluetoothGatt gatt)
+        protected virtual void ReadFirstService(BluetoothGatt gatt)
         {
-            DumpServices(gatt);
+            ListServices(gatt);
 
-            BluetoothGattService service = gatt.Services[index];
-            if (service != null)
-                sampleService = new SampleService(gatt, service, this);
-
-            //BluetoothGattService service = gatt.GetService(SERVICE_GENERIC_ACCESS);
-            //if (service != null)
-            //{
-            //    genericAccess = new GenericAccessService(gatt, service);
-            //}
+            idxCharacteristic = 0;
+            BluetoothGattService service = gatt.Services[idxService];
+            ReadService(gatt, service);
         }
 
         public virtual void ReadNextService(BluetoothGatt gatt)
         {
-            index++;
-            Log.Debug(TAG, "ReadNextService({0})", index);
-            if (index < gatt.Services.Count)
+            idxService++;
+            Log.Debug(TAG, "ReadNextService({0})", idxService);
+            if (idxService < gatt.Services.Count)
             {
-                BluetoothGattService service = gatt.Services[index];
-                if (service != null)
-                {
-                    BlutoothService.Dump(service, gattServerName);
-
-                    if (sampleService != null)
-                        sampleService = null;
-
-                    sampleService = new SampleService(gatt, service, this);
-                }
+                BluetoothGattService service = gatt.Services[idxService];
+                ReadService(gatt, service);
             }
             else
             {
@@ -194,11 +179,75 @@ namespace Blu
 
         }
 
-        protected static void DumpServices(BluetoothGatt gatt)
+        protected void ReadService(BluetoothGatt gatt, BluetoothGattService service)
+        {
+            idxCharacteristic = 0;
+            Log.Debug(TAG, "ReadService(0x{0:X})", GetAssignedNumber(service.Uuid));
+            if (service != null)
+            {
+                if (service.Characteristics.Count > 0)
+                {
+                    BluetoothGattCharacteristic characteristic = service.Characteristics[0];
+                    Log.Debug(TAG, "ReadCharacteristic(0x{0:X})", GetAssignedNumber(characteristic.Uuid));
+                    gatt.ReadCharacteristic(characteristic);
+                }
+            }
+        }
+
+        public void ReadCharacteristic(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic)
+        {
+            BluetoothGattService service = characteristic.Service;
+
+            byte[] value = characteristic.GetValue();
+            if (value != null)
+            {   
+                Log.Debug(TAG, 
+                    "service '0x{0:X}' - characteristic '0x{1:X}' - '{2}'",
+                    GetAssignedNumber(service.Uuid),
+                    GetAssignedNumber(characteristic.Uuid), 
+                    BitConverter.ToString(value));
+            }
+            else
+            {
+                Log.Debug(TAG, 
+                    "service '0x{0:X}' - characteristic '0x{1:X}' - 'empty'",
+                    GetAssignedNumber(service.Uuid),
+                    GetAssignedNumber(characteristic.Uuid));
+            }
+
+            idxCharacteristic++;
+            if (idxCharacteristic < characteristic.Service.Characteristics.Count)
+            {
+                BluetoothGattCharacteristic nextCharacteristic = service.Characteristics[idxCharacteristic];
+                Log.Debug(TAG, "ReadNextCharacteristic(0x{0:X})", GetAssignedNumber(nextCharacteristic.Uuid));
+                gatt.ReadCharacteristic(characteristic);
+            }
+            else
+                ReadNextService(gatt);
+        }
+
+        protected static void ListServices(BluetoothGatt gatt)
         {
             foreach (BluetoothGattService service in gatt.Services)
             {
-                Log.Debug(TAG, string.Format("UUID: '0x{0:X}'", BlutoothService.GetAssignedNumber(service.Uuid)));
+                Log.Debug(TAG, string.Format("UUID: '0x{0:X}'", GetAssignedNumber(service.Uuid)));
+            }
+        }
+
+        public static int GetAssignedNumber(Java.Util.UUID uuid)
+        {
+            // Keep only the significant bits of the UUID
+            return (int)((uuid.MostSignificantBits & 0x0000FFFF00000000L) >> 32);
+        }
+
+        public static void DumpService(BluetoothGattService service, string serviceName)
+        {
+            if (service != null)
+            {
+                foreach (BluetoothGattCharacteristic characteristic in service.Characteristics)
+                {
+                    Log.Debug(serviceName, string.Format("'0x{0:X}: characteristic's UUID : '0x{1:X}'", GetAssignedNumber(service.Uuid), GetAssignedNumber(characteristic.Uuid)));
+                }
             }
         }
 
@@ -209,18 +258,10 @@ namespace Blu
 
         public override void OnCharacteristicRead(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, GattStatus status)
         {
-            Log.Debug(TAG, "OnCharacteristicRead(0x{0:X})", BlutoothService.GetAssignedNumber(characteristic.Uuid));
-            if (sampleService != null)
-            {
-                sampleService.ReadCharacteristic(characteristic);
-                sampleService.ReadNextCharacteristic();
-            }
+            Log.Debug(TAG, "OnCharacteristicRead(0x{0:X})", GetAssignedNumber(characteristic.Uuid));
+            ReadCharacteristic(gatt, characteristic);
 
-            /*if (BlutoothService.GetAssignedNumber(characteristic.Service.Uuid) == 0x1800)   //org.bluetooth.service.generic_access
-            {
-                if (genericAccess != null)
-                    genericAccess.ReadCharacteristic(characteristic);
-            }*/
+            //if (BlutoothService.GetAssignedNumber(characteristic.Service.Uuid) == 0x1800)   //org.bluetooth.service.generic_access
         }
 
         public override void OnCharacteristicWrite(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, GattStatus status)
@@ -275,7 +316,7 @@ namespace Blu
             {
                 Log.Debug(TAG, string.Format("services of '{0}' successfully retrieved", gattServerName));
                 
-                System.Threading.ThreadPool.QueueUserWorkItem(o => ReadService(gatt));
+                System.Threading.ThreadPool.QueueUserWorkItem(o => ReadFirstService(gatt));
             }
             else if (status == GattStatus.Success)
                 Log.Error(TAG, string.Format("failed to retrieve services of '{0}'", gattServerName));
@@ -340,144 +381,5 @@ namespace Blu
             return view;
         }
     }
-
-    public abstract class BlutoothService
-    {
-        protected BluetoothGatt gatt = null;
-        protected BluetoothGattService service = null;
-        protected GattDevice device = null;
-
-        public BlutoothService(BluetoothGatt gatt, BluetoothGattService service, GattDevice device)
-        {
-            this.gatt = gatt;
-            this.service = service;
-            this.device = device;
-        }
-
-        public static int GetAssignedNumber(Java.Util.UUID uuid)
-        {
-            // Keep only the significant bits of the UUID
-            return (int)((uuid.MostSignificantBits & 0x0000FFFF00000000L) >> 32);
-        }
-
-        public static void Dump(BluetoothGattService service, string serviceName)
-        {
-            if (service != null)
-            {
-                foreach (BluetoothGattCharacteristic characteristic in service.Characteristics)
-                {
-                    Log.Debug(serviceName, string.Format("'0x{0:X}: characteristic's UUID : '0x{1:X}'", GetAssignedNumber(service.Uuid), GetAssignedNumber(characteristic.Uuid)));
-                }
-            }
-        }
-
-        public abstract string GetName();
-
-    }
-
-    public class SampleService : BlutoothService
-    {
-        public readonly static String TAG = typeof(SampleService).Name;
-
-        protected int index = 0;
-        protected int nCharacteristics = 0;
-
-        public SampleService(BluetoothGatt gatt, BluetoothGattService service, GattDevice device) : base(gatt, service, device)
-        {
-            index = 0;
-            Log.Debug(TAG, "SampleService(0x{0:X})", BlutoothService.GetAssignedNumber(service.Uuid));
-            if (service != null)
-            {
-                nCharacteristics = service.Characteristics.Count;
-                if (nCharacteristics > 0)
-                {
-                    BluetoothGattCharacteristic characteristic = service.Characteristics[0];
-                    Log.Debug(TAG, "ReadCharacteristic(0x{0:X})", BlutoothService.GetAssignedNumber(characteristic.Uuid));
-                    gatt.ReadCharacteristic(characteristic);
-                }
-            }
-        }
-
-        public void ReadCharacteristic(BluetoothGattCharacteristic characteristic)
-        {
-            byte[] value = characteristic.GetValue();
-            if (value != null)
-            {   
-                Log.Debug(TAG, 
-                    "service '0x{0:X}' - characteristic '0x{1:X}' - '{2}'",
-                    BlutoothService.GetAssignedNumber(service.Uuid),
-                    BlutoothService.GetAssignedNumber(characteristic.Uuid), 
-                    BitConverter.ToString(value));
-            }
-            else
-            {
-                Log.Debug(TAG, 
-                    "service '0x{0:X}' - characteristic '0x{1:X}' - 'empty'",
-                    BlutoothService.GetAssignedNumber(service.Uuid),
-                    BlutoothService.GetAssignedNumber(characteristic.Uuid));
-            }
-        }
-
-        public void ReadNextCharacteristic()
-        {
-            index++;
-            if (index < nCharacteristics)
-            {
-                BluetoothGattCharacteristic characteristic = service.Characteristics[index];
-                Log.Debug(TAG, "ReadNextCharacteristic(0x{0:X})", BlutoothService.GetAssignedNumber(characteristic.Uuid));
-                gatt.ReadCharacteristic(characteristic);
-            }
-            else
-                device.ReadNextService(gatt);
-        }
-
-        public override string GetName()
-        {
-            return TAG;
-        }
-    }
-
-    public class GenericAccessService : BlutoothService
-    {
-        public readonly static String TAG = typeof(GenericAccessService).Name;
-
-        public string deviceName { get; private set; }
-        public Int16 appearance { get; private set; }
-
-        protected static Java.Util.UUID CHAR_DEVICE_NAME = Java.Util.UUID.FromString("00002A00-0000-1000-8000-00805f9b34fb");    //org.bluetooth.characteristic.gap.device_name
-        protected static Java.Util.UUID CHAR_APPEARANCE = Java.Util.UUID.FromString("00002A01-0000-1000-8000-00805f9b34fb");    //org.bluetooth.characteristic.gap.appearance
-
-        public GenericAccessService(BluetoothGatt gatt, BluetoothGattService service, GattDevice device) : base(gatt, service, device)
-        {
-            if (service != null)
-            {
-                BluetoothGattCharacteristic characteristic = service.GetCharacteristic(CHAR_DEVICE_NAME);
-                if (characteristic != null)
-                    gatt.ReadCharacteristic(characteristic);
-            }
-        }
-
-        public void ReadCharacteristic(BluetoothGattCharacteristic characteristic)
-        {
-            if (BlutoothService.GetAssignedNumber(characteristic.Uuid) == 0x2A00)   //org.bluetooth.characteristic.gap.device_name
-            {
-                byte[] value = characteristic.GetValue();
-                if (value != null)
-                    deviceName = BitConverter.ToString(value);
-            }
-
-            if (BlutoothService.GetAssignedNumber(characteristic.Uuid) == 0x2A01)   //org.bluetooth.characteristic.gap.appearance
-            {
-                byte[] value = characteristic.GetValue();
-                if (value != null)
-                    appearance = BitConverter.ToInt16(value, 0);
-            }
-
-        }
-
-        public override string GetName()
-        {
-            return TAG;
-        }
-    }
+   
 }
