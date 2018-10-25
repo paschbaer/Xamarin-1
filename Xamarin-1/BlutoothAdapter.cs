@@ -334,12 +334,14 @@ namespace Blu
         public string deviceName { get; private set; }
         public Int16 appearance { get; private set; }
 
+        protected static Java.Util.UUID CHAR_DEVICE_NAME = Java.Util.UUID.FromString("00002A00-0000-1000-8000-00805f9b34fb");    //org.bluetooth.characteristic.gap.device_name
+
 
         public GenericAccessService(BluetoothGatt gatt, BluetoothGattService service)
         {
             if (service != null)
             {
-                service.GetCharacteristic()
+                //BluetoothGattCharacteristic characteristic = service.GetCharacteristic(CHAR_DEVICE_NAME);
 
                 foreach (BluetoothGattCharacteristic characteristic in service.Characteristics)
                 {
