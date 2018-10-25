@@ -200,14 +200,12 @@ namespace Blu
                 //    genericAccess.ReadCharacteristic(characteristic);
 
                 if (sampleService != null)
+                {
                     sampleService.ReadCharacteristic(characteristic);
+                    sampleService.ReadNextCharacteristic();
+                }
 
             }
-
-            Intent message = new Intent("com.xamarin.example.BLU.SampleService");
-            message.SetAction("BlutoothService.ReadCharacteristic");
-            message.PutExtra("inc", 1);
-            Android.Support.V4.Content.LocalBroadcastManager.GetInstance(ctx).SendBroadcast(message);
         }
 
         public override void OnCharacteristicWrite(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, GattStatus status)
@@ -328,7 +326,7 @@ namespace Blu
         }
     }
 
-    public abstract class BlutoothService : BroadcastReceiver
+    public abstract class BlutoothService
     {
         protected BluetoothGatt gatt = null;
         protected BluetoothGattService service = null;
@@ -368,24 +366,6 @@ namespace Blu
 
         protected int index = 0;
 
-        public override void OnReceive(Context context, Intent intent)
-        {
-            if (intent.Action == "BlutoothService.ReadCharacteristic")
-            {
-                int inc = intent.GetIntExtra("inc", int.MaxValue);
-                if ((index + inc) < service.Characteristics.Count)
-                {
-                    index += inc;
-                    BluetoothGattCharacteristic characteristic = service.Characteristics[index];
-                    gatt.ReadCharacteristic(characteristic);
-                }
-            }
-
-        }
-
-        public SampleService() : base(null, null)
-        {}
-
         public SampleService(BluetoothGatt gatt, BluetoothGattService service) : base(gatt, service)
         {
             index = 0;
@@ -407,6 +387,16 @@ namespace Blu
                 Log.Debug(TAG, "characteristic '0x{0:X}' - '{1}'", BlutoothService.GetAssignedNumber(characteristic.Uuid), BitConverter.ToString(value));
         }
 
+        public void ReadNextCharacteristic()
+        {
+            index++;
+            if (index < service.Characteristics.Count)
+            {
+                BluetoothGattCharacteristic characteristic = service.Characteristics[index];
+                gatt.ReadCharacteristic(characteristic);
+            }
+        }
+
         public override string GetName()
         {
             return TAG;
@@ -425,23 +415,6 @@ namespace Blu
 
         protected static Java.Util.UUID CHAR_DEVICE_NAME = Java.Util.UUID.FromString("00002A00-0000-1000-8000-00805f9b34fb");    //org.bluetooth.characteristic.gap.device_name
         protected static Java.Util.UUID CHAR_APPEARANCE = Java.Util.UUID.FromString("00002A01-0000-1000-8000-00805f9b34fb");    //org.bluetooth.characteristic.gap.appearance
-
-        public override void OnReceive(Context context, Intent intent)
-        {
-            if (intent.Action == "BlutoothService.ReadCharacteristic")
-            {
-                int index = intent.GetIntExtra("index", 0);
-                if (index > 0)
-                {
-                    BluetoothGattCharacteristic characteristic = service.Characteristics[index];
-                    gatt.ReadCharacteristic(characteristic);
-                }
-            }
-
-        }
-
-        public GenericAccessService() : base(null, null)
-        { }
 
         public GenericAccessService(BluetoothGatt gatt, BluetoothGattService service) : base(gatt, service)
         {
