@@ -173,7 +173,7 @@ namespace Blu
         public virtual void ReadNextService(BluetoothGatt gatt)
         {
             index++;
-
+            Log.Debug(TAG, "ReadNextService({0})", index);
             if (index < gatt.Services.Count)
             {
                 BluetoothGattService service = gatt.Services[index];
@@ -186,6 +186,10 @@ namespace Blu
 
                     sampleService = new SampleService(gatt, service, this);
                 }
+            }
+            else
+            {
+                Log.Debug(TAG, "ReadNextService finished");
             }
 
         }
@@ -205,18 +209,18 @@ namespace Blu
 
         public override void OnCharacteristicRead(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, GattStatus status)
         {
-            if (BlutoothService.GetAssignedNumber(characteristic.Service.Uuid) == 0x1800)   //org.bluetooth.service.generic_access
+            Log.Debug(TAG, "OnCharacteristicRead(0x{0:X})", BlutoothService.GetAssignedNumber(characteristic.Uuid));
+            if (sampleService != null)
             {
-                //if (genericAccess != null)
-                //    genericAccess.ReadCharacteristic(characteristic);
-
-                if (sampleService != null)
-                {
-                    sampleService.ReadCharacteristic(characteristic);
-                    sampleService.ReadNextCharacteristic();
-                }
-
+                sampleService.ReadCharacteristic(characteristic);
+                sampleService.ReadNextCharacteristic();
             }
+
+            /*if (BlutoothService.GetAssignedNumber(characteristic.Service.Uuid) == 0x1800)   //org.bluetooth.service.generic_access
+            {
+                if (genericAccess != null)
+                    genericAccess.ReadCharacteristic(characteristic);
+            }*/
         }
 
         public override void OnCharacteristicWrite(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, GattStatus status)
@@ -381,13 +385,14 @@ namespace Blu
         public SampleService(BluetoothGatt gatt, BluetoothGattService service, GattDevice device) : base(gatt, service, device)
         {
             index = 0;
-
+            Log.Debug(TAG, "SampleService(0x{0:X})", BlutoothService.GetAssignedNumber(service.Uuid));
             if (service != null)
             {
                 nCharacteristics = service.Characteristics.Count;
                 if (nCharacteristics > 0)
                 {
                     BluetoothGattCharacteristic characteristic = service.Characteristics[0];
+                    Log.Debug(TAG, "ReadCharacteristic(0x{0:X})", BlutoothService.GetAssignedNumber(characteristic.Uuid));
                     gatt.ReadCharacteristic(characteristic);
                 }
             }
@@ -397,7 +402,20 @@ namespace Blu
         {
             byte[] value = characteristic.GetValue();
             if (value != null)
-                Log.Debug(TAG, "characteristic '0x{0:X}' - '{1}'", BlutoothService.GetAssignedNumber(characteristic.Uuid), BitConverter.ToString(value));
+            {   
+                Log.Debug(TAG, 
+                    "service '0x{0:X}' - characteristic '0x{1:X}' - '{2}'",
+                    BlutoothService.GetAssignedNumber(service.Uuid),
+                    BlutoothService.GetAssignedNumber(characteristic.Uuid), 
+                    BitConverter.ToString(value));
+            }
+            else
+            {
+                Log.Debug(TAG, 
+                    "service '0x{0:X}' - characteristic '0x{1:X}' - 'empty'",
+                    BlutoothService.GetAssignedNumber(service.Uuid),
+                    BlutoothService.GetAssignedNumber(characteristic.Uuid));
+            }
         }
 
         public void ReadNextCharacteristic()
@@ -406,6 +424,7 @@ namespace Blu
             if (index < nCharacteristics)
             {
                 BluetoothGattCharacteristic characteristic = service.Characteristics[index];
+                Log.Debug(TAG, "ReadNextCharacteristic(0x{0:X})", BlutoothService.GetAssignedNumber(characteristic.Uuid));
                 gatt.ReadCharacteristic(characteristic);
             }
             else
