@@ -74,7 +74,7 @@ namespace Blu
                     gatt.Dispose();
                 }
 
-                gatt = device.ConnectGatt(ctx, false, gattdevice);
+                gatt = device.ConnectGatt(ctx, false, gattdevice);  //-> OnConnectionStateChange() -> DiscoverServices() -> OnServicesDiscovered() -> GattDevice.Initialize()
                 if (gatt == null)
                 {
                     Log.Error(TAG, string.Format("failed to connect to GATT server '{0}'", identifer));
@@ -120,10 +120,6 @@ namespace Blu
 
                 UpdateTextOut(textout);
             }
-
-            //System.Threading.Thread.Sleep(1000);
-            //device.Type == BluetoothDeviceType.Unknown
-
         }
 
         public void UpdateTextOut(Android.Widget.ListView textout)
@@ -142,19 +138,13 @@ namespace Blu
     {
         public readonly static String TAG = typeof(GattDevice).Name;
 
-        public GenericAccessService genericAccess;
+        //public GenericAccessService genericAccess;
+        protected SampleService sampleService;
 
         protected Context ctx;
         protected string gattServerName;
+
         protected static Java.Util.UUID SERVICE_GENERIC_ACCESS = Java.Util.UUID.FromString("00001800-0000-1000-8000-00805f9b34fb");    //org.bluetooth.service.generic_access
-        
-        public static void EnumServices(BluetoothGatt gatt)
-        {
-            foreach (BluetoothGattService service in gatt.Services)
-            {
-                Log.Debug(TAG, string.Format("UUID: '0x{0:X}'", BlutoothService.GetAssignedNumber(service.Uuid)));
-            }
-        }
 
         public GattDevice(Context ctx, string identifier)
         {
@@ -162,15 +152,38 @@ namespace Blu
             gattServerName = identifier;
         }
 
-        public void Initialize(BluetoothGatt gatt)
+        public virtual void Initialize(BluetoothGatt gatt)
         {
-            EnumServices(gatt);
+            DumpServices(gatt);
 
-            BluetoothGattService service = gatt.GetService(SERVICE_GENERIC_ACCESS);
-            if (service != null)
+            BluetoothGattService service = gatt.Services[0];
+            sampleService = new SampleService(gatt, service);
+
+            /*foreach (BluetoothGattService service in gatt.Services)
             {
                 BlutoothService.Dump(service, gattServerName);
-                genericAccess = new GenericAccessService(gatt, service);
+
+                if (sampleService != null)
+                {
+                    sampleService.Dispose();
+                    sampleService = null;
+                }
+
+                sampleService = new SampleService(gatt, service);
+            }*/
+
+            //BluetoothGattService service = gatt.GetService(SERVICE_GENERIC_ACCESS);
+            //if (service != null)
+            //{
+            //    genericAccess = new GenericAccessService(gatt, service);
+            //}
+        }
+
+        protected static void DumpServices(BluetoothGatt gatt)
+        {
+            foreach (BluetoothGattService service in gatt.Services)
+            {
+                Log.Debug(TAG, string.Format("UUID: '0x{0:X}'", BlutoothService.GetAssignedNumber(service.Uuid)));
             }
         }
 
@@ -183,14 +196,17 @@ namespace Blu
         {
             if (BlutoothService.GetAssignedNumber(characteristic.Service.Uuid) == 0x1800)   //org.bluetooth.service.generic_access
             {
-                if (genericAccess != null)
-                    genericAccess.ReadCharacteristic(characteristic);
+                //if (genericAccess != null)
+                //    genericAccess.ReadCharacteristic(characteristic);
+
+                if (sampleService != null)
+                    sampleService.ReadCharacteristic(characteristic);
 
             }
 
-            Intent message = new Intent("com.xamarin.example.BLU");
-            // If desired, pass some values to the broadcast receiver.
-            message.PutExtra("key", "value");
+            Intent message = new Intent("com.xamarin.example.BLU.SampleService");
+            message.SetAction("BlutoothService.ReadCharacteristic");
+            message.PutExtra("inc", 1);
             Android.Support.V4.Content.LocalBroadcastManager.GetInstance(ctx).SendBroadcast(message);
         }
 
@@ -253,6 +269,14 @@ namespace Blu
 
             //base.OnServicesDiscovered(gatt, status);
         }
+
+        protected void UpdateUi(string key, string value)
+        {// If desired, pass some values to the broadcast receiver.
+            Intent message = new Intent("com.xamarin.example.BLU");
+ 
+            message.PutExtra(key, value);
+            Android.Support.V4.Content.LocalBroadcastManager.GetInstance(ctx).SendBroadcast(message);
+        }
     }
 
     public class StringListAdapter : Android.Widget.BaseAdapter<string>
@@ -304,8 +328,17 @@ namespace Blu
         }
     }
 
-    public abstract class BlutoothService
+    public abstract class BlutoothService : BroadcastReceiver
     {
+        protected BluetoothGatt gatt = null;
+        protected BluetoothGattService service = null;
+
+        public BlutoothService(BluetoothGatt gatt, BluetoothGattService service)
+        {
+            this.gatt = gatt;
+            this.service = service;
+        }
+
         public static int GetAssignedNumber(Java.Util.UUID uuid)
         {
             // Keep only the significant bits of the UUID
@@ -327,6 +360,62 @@ namespace Blu
 
     }
 
+    [BroadcastReceiver(Enabled = true, Exported = false)]
+    [IntentFilter(new[] { "com.xamarin.example.BLU.SampleService" })]
+    public class SampleService : BlutoothService
+    {
+        public readonly static String TAG = typeof(SampleService).Name;
+
+        protected int index = 0;
+
+        public override void OnReceive(Context context, Intent intent)
+        {
+            if (intent.Action == "BlutoothService.ReadCharacteristic")
+            {
+                int inc = intent.GetIntExtra("inc", int.MaxValue);
+                if ((index + inc) < service.Characteristics.Count)
+                {
+                    index += inc;
+                    BluetoothGattCharacteristic characteristic = service.Characteristics[index];
+                    gatt.ReadCharacteristic(characteristic);
+                }
+            }
+
+        }
+
+        public SampleService() : base(null, null)
+        {}
+
+        public SampleService(BluetoothGatt gatt, BluetoothGattService service) : base(gatt, service)
+        {
+            index = 0;
+
+            if (service != null)
+            {
+                if (service.Characteristics.Count > 0)
+                {
+                    BluetoothGattCharacteristic characteristic = service.Characteristics[0];
+                    gatt.ReadCharacteristic(characteristic);
+                }
+            }
+        }
+
+        public void ReadCharacteristic(BluetoothGattCharacteristic characteristic)
+        {
+            byte[] value = characteristic.GetValue();
+            if (value != null)
+                Log.Debug(TAG, "characteristic '0x{0:X}' - '{1}'", BlutoothService.GetAssignedNumber(characteristic.Uuid), BitConverter.ToString(value));
+        }
+
+        public override string GetName()
+        {
+            return TAG;
+        }
+    }
+
+
+    [BroadcastReceiver(Enabled = true, Exported = false)]
+    [IntentFilter(new[] { "com.xamarin.example.BLU.GenericAccessService" })]
     public class GenericAccessService : BlutoothService
     {
         public readonly static String TAG = typeof(GenericAccessService).Name;
@@ -335,18 +424,32 @@ namespace Blu
         public Int16 appearance { get; private set; }
 
         protected static Java.Util.UUID CHAR_DEVICE_NAME = Java.Util.UUID.FromString("00002A00-0000-1000-8000-00805f9b34fb");    //org.bluetooth.characteristic.gap.device_name
+        protected static Java.Util.UUID CHAR_APPEARANCE = Java.Util.UUID.FromString("00002A01-0000-1000-8000-00805f9b34fb");    //org.bluetooth.characteristic.gap.appearance
 
+        public override void OnReceive(Context context, Intent intent)
+        {
+            if (intent.Action == "BlutoothService.ReadCharacteristic")
+            {
+                int index = intent.GetIntExtra("index", 0);
+                if (index > 0)
+                {
+                    BluetoothGattCharacteristic characteristic = service.Characteristics[index];
+                    gatt.ReadCharacteristic(characteristic);
+                }
+            }
 
-        public GenericAccessService(BluetoothGatt gatt, BluetoothGattService service)
+        }
+
+        public GenericAccessService() : base(null, null)
+        { }
+
+        public GenericAccessService(BluetoothGatt gatt, BluetoothGattService service) : base(gatt, service)
         {
             if (service != null)
             {
-                //BluetoothGattCharacteristic characteristic = service.GetCharacteristic(CHAR_DEVICE_NAME);
-
-                foreach (BluetoothGattCharacteristic characteristic in service.Characteristics)
-                {
+                BluetoothGattCharacteristic characteristic = service.GetCharacteristic(CHAR_DEVICE_NAME);
+                if (characteristic != null)
                     gatt.ReadCharacteristic(characteristic);
-                }
             }
         }
 
