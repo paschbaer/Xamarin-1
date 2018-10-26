@@ -16,6 +16,7 @@ namespace Blu
         protected BluetoothGatt gatt;
         protected System.Collections.Generic.Dictionary<string, BluetoothDevice> mapDevices = new System.Collections.Generic.Dictionary<string, BluetoothDevice>();
         protected ScanCallBack scancallback;
+        protected GattDevice gattdevice;
 
         public BlutoothAdapter()
         {}
@@ -66,17 +67,30 @@ namespace Blu
             BluetoothDevice device = mapDevices[identifer];
             if (device != null)
             {
-                GattDevice gattdevice = new GattDevice(ctx, identifer);
-                if (gatt != null)
+                if (gattdevice != null)
                 {
-                    gatt.Disconnect();
-                    gatt.Close();   //or gatt.Connect() to re-connect to device
+                    if (identifer.Equals(gattdevice.gattServerName))
+                        gatt.Connect();//to re-connect to device
+                    else
+                    {
+                        if (gatt != null)
+                        {
+                            gatt.Disconnect();
+                            gatt.Close(); 
+                        }
+
+                        gattdevice = null;
+                    }
                 }
 
-                gatt = device.ConnectGatt(ctx, false, gattdevice);  //-> gattdevice.OnConnectionStateChange() -> gatt.DiscoverServices() ->gattdevice.OnServicesDiscovered() -> gattdevice.StartInit()
-                if (gatt == null)
+                if (gattdevice == null)
                 {
-                    Log.Error(TAG, string.Format("failed to connect to GATT server '{0}'", identifer));
+                    gattdevice = new GattDevice(ctx, identifer);
+                    gatt = device.ConnectGatt(ctx, false, gattdevice);  //-> gattdevice.OnConnectionStateChange() -> gatt.DiscoverServices() ->gattdevice.OnServicesDiscovered() -> gattdevice.StartInit()
+                    if (gatt == null)
+                    {
+                        Log.Error(TAG, string.Format("failed to connect to GATT server '{0}'", identifer));
+                    }
                 }
             }
         }
@@ -138,7 +152,7 @@ namespace Blu
         public readonly static String TAG = typeof(GattDevice).Name;
 
         protected Context ctx;
-        protected string gattServerName;
+        public string gattServerName { get; private set; }
 
         protected BluetoothGatt gatt { get; private set; }
         protected BluetoothGattService service { get; private set; }
