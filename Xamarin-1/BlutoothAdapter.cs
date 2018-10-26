@@ -62,15 +62,18 @@ namespace Blu
                 adapter.StopLeScan(scancallback);
         }
 
-        public void EnumServices(Context ctx, string identifer)
+        public void EnumServices(Context ctx, string identifier)
         {
-            BluetoothDevice device = mapDevices[identifer];
+            BluetoothDevice device = mapDevices[identifier];
             if (device != null)
             {
                 if (gattdevice != null)
                 {
-                    if (identifer.Equals(gattdevice.gattServerName))
+                    if (identifier.Equals(gattdevice.gattServerName))
+                    {
                         gatt.Connect();//to re-connect to device
+                        gatt.DiscoverServices();
+                    }
                     else
                     {
                         if (gatt != null)
@@ -79,17 +82,21 @@ namespace Blu
                             gatt.Close(); 
                         }
 
-                        gattdevice = null;
+                        gattdevice.Reset(identifier);
+                        gatt = device.ConnectGatt(ctx, false, gattdevice);  //-> gattdevice.OnConnectionStateChange() -> gatt.DiscoverServices() ->gattdevice.OnServicesDiscovered() -> gattdevice.StartInit()
+                        if (gatt == null)
+                        {
+                            Log.Error(TAG, string.Format("failed to connect to GATT server '{0}'", identifier));
+                        }
                     }
                 }
-
-                if (gattdevice == null)
+                else
                 {
-                    gattdevice = new GattDevice(ctx, identifer);
+                    gattdevice = new GattDevice(ctx, identifier);
                     gatt = device.ConnectGatt(ctx, false, gattdevice);  //-> gattdevice.OnConnectionStateChange() -> gatt.DiscoverServices() ->gattdevice.OnServicesDiscovered() -> gattdevice.StartInit()
                     if (gatt == null)
                     {
-                        Log.Error(TAG, string.Format("failed to connect to GATT server '{0}'", identifer));
+                        Log.Error(TAG, string.Format("failed to connect to GATT server '{0}'", identifier));
                     }
                 }
             }
@@ -178,6 +185,11 @@ namespace Blu
         ~GattDevice()
         {
             Android.Support.V4.Content.LocalBroadcastManager.GetInstance(ctx).UnregisterReceiver(receiver);
+        }
+
+        public void Reset(string identifier)
+        {
+            gattServerName = identifier;
         }
 
         protected virtual void StartInit(BluetoothGatt gatt)
