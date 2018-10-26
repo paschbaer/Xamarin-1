@@ -69,9 +69,8 @@ namespace Blu
                 GattDevice gattdevice = new GattDevice(ctx, identifer);
                 if (gatt != null)
                 {
-                    //gatt.Disconnect();
+                    gatt.Disconnect();
                     gatt.Close();   //or gatt.Connect() to re-connect to device
-                    gatt.Dispose();
                 }
 
                 gatt = device.ConnectGatt(ctx, false, gattdevice);  //-> gattdevice.OnConnectionStateChange() -> gatt.DiscoverServices() ->gattdevice.OnServicesDiscovered() -> gattdevice.StartInit()
@@ -162,10 +161,15 @@ namespace Blu
             Android.Support.V4.Content.LocalBroadcastManager.GetInstance(ctx).RegisterReceiver(receiver, new IntentFilter("com.xamarin.example.BLU.Device"));
         }
 
+        ~GattDevice()
+        {
+            Android.Support.V4.Content.LocalBroadcastManager.GetInstance(ctx).UnregisterReceiver(receiver);
+        }
+
         protected virtual void StartInit(BluetoothGatt gatt)
         {
             this.gatt = gatt;
-
+            
             ListServices(gatt);
 
             UpdateDevice(ACTION_START_ENUM_SERVICES);
@@ -175,6 +179,7 @@ namespace Blu
         {
             if ((gatt != null) && (index < gatt.Services.Count))
             {
+                Log.Debug(TAG, "ReadService({0})", index);
                 service = gatt.Services[index];
                 ReadService(gatt, service);
             }
@@ -191,11 +196,7 @@ namespace Blu
             if (service != null)
             {
                 if (service.Characteristics.Count > 0)
-                {
-                    BluetoothGattCharacteristic characteristic = service.Characteristics[0];
-                    Log.Debug(TAG, "ReadCharacteristic(0x{0:X})", GetAssignedNumber(characteristic.Uuid));
-                    gatt.ReadCharacteristic(characteristic);
-                }
+                    UpdateDevice(ACTION_READ_NEXT_CHARACTERISTIC);
             }
         }
 
@@ -204,7 +205,10 @@ namespace Blu
             if ((gatt != null) && (service != null))
             {
                 if (index < service.Characteristics.Count)
-                    ReadCharacteristic(gatt, service.Characteristics[index]);
+                {
+                    Log.Debug(TAG, "ReadCharacteristic({0})", index);
+                    gatt.ReadCharacteristic(service.Characteristics[index]);
+                }
                 else
                 {
                     service = null;
@@ -408,6 +412,8 @@ namespace Blu
     [IntentFilter(new[] { "com.xamarin.example.BLU.Device" })]
     public class GattDeviceReceiver : BroadcastReceiver
     {
+        public readonly static String TAG = typeof(GattDeviceReceiver).Name;
+
         protected GattDevice device;
         protected int idxSvc;
         protected int idxChar;
@@ -432,6 +438,7 @@ namespace Blu
 
             if(action.Equals(GattDevice.ACTION_START_ENUM_SERVICES))
             {
+                Log.Debug(TAG, GattDevice.ACTION_START_ENUM_SERVICES);
                 idxSvc = 0;
                 idxChar = 0;
 
@@ -441,6 +448,7 @@ namespace Blu
 
             if (action.Equals(GattDevice.ACTION_ENUM_NEXT_SERVICE))
             {
+                Log.Debug(TAG, GattDevice.ACTION_ENUM_NEXT_SERVICE);
                 idxChar = 0;
 
                 if (device != null)
@@ -449,13 +457,14 @@ namespace Blu
 
             if (action.Equals(GattDevice.ACTION_READ_NEXT_CHARACTERISTIC))
             {
+                Log.Debug(TAG, GattDevice.ACTION_READ_NEXT_CHARACTERISTIC);
                 if (device != null)
                     device.ReadCharacteristic(idxChar++);
             }
 
             if (action.Equals(GattDevice.ACTION_ENUM_SERVICES_FINISHED))
             {
-
+                Log.Debug(TAG, GattDevice.ACTION_ENUM_SERVICES_FINISHED);
             }
 
         }
