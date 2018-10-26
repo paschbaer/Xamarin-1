@@ -343,28 +343,12 @@ namespace Blu
             Android.Support.V4.Content.LocalBroadcastManager.GetInstance(ctx).SendBroadcast(message);
         }
 
-        protected void UpdateDevice(string action, string key = "", string value = "")
+        protected void UpdateDevice(string action)
         {// If desired, pass some values to the broadcast receiver.
             Intent message = new Intent("com.xamarin.example.BLU.Device");
 
             if (!string.IsNullOrEmpty(action))
-                message.SetAction(action);
-
-            if (!string.IsNullOrEmpty(key) && !string.IsNullOrEmpty(value))
-                message.PutExtra(key, value);
-
-            Android.Support.V4.Content.LocalBroadcastManager.GetInstance(ctx).SendBroadcast(message);
-        }
-
-        protected void UpdateDevice(string action, string key, int value)
-        {// If desired, pass some values to the broadcast receiver.
-            Intent message = new Intent("com.xamarin.example.BLU.Device");
-
-            if (!string.IsNullOrEmpty(action))
-                message.SetAction(action);
-
-            if (!string.IsNullOrEmpty(key))
-                message.PutExtra(key, value);
+                message.PutExtra("action", action);
 
             Android.Support.V4.Content.LocalBroadcastManager.GetInstance(ctx).SendBroadcast(message);
         }
@@ -444,7 +428,9 @@ namespace Blu
 
         public override void OnReceive(Context context, Intent intent)
         {
-            if(intent.Action.Equals(GattDevice.ACTION_START_ENUM_SERVICES))
+            string action = intent.GetStringExtra("action");
+
+            if(action.Equals(GattDevice.ACTION_START_ENUM_SERVICES))
             {
                 idxSvc = 0;
                 idxChar = 0;
@@ -453,7 +439,7 @@ namespace Blu
                     device.ReadService(idxSvc++);
             }
 
-            if (intent.Action.Equals(GattDevice.ACTION_ENUM_NEXT_SERVICE))
+            if (action.Equals(GattDevice.ACTION_ENUM_NEXT_SERVICE))
             {
                 idxChar = 0;
 
@@ -461,18 +447,17 @@ namespace Blu
                     device.ReadService(idxSvc++);
             }
 
-            if (intent.Action.Equals(GattDevice.ACTION_READ_NEXT_CHARACTERISTIC))
+            if (action.Equals(GattDevice.ACTION_READ_NEXT_CHARACTERISTIC))
             {
                 if (device != null)
                     device.ReadCharacteristic(idxChar++);
             }
 
-            if (intent.Action.Equals(GattDevice.ACTION_ENUM_SERVICES_FINISHED))
+            if (action.Equals(GattDevice.ACTION_ENUM_SERVICES_FINISHED))
             {
 
             }
 
-            //String value = intent.GetStringExtra("key");
         }
     }
 }
