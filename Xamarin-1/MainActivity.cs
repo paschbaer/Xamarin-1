@@ -47,7 +47,7 @@ namespace Blu
                 Android.Support.V4.App.ActivityCompat.RequestPermissions(this, new string[] { Manifest.Permission.AccessFineLocation }, (int)PermissionRequestCode.REQUEST_ACCESS_FINE_LOCATION);
 
             receiver = new SampleReceiver();
-            Android.Support.V4.Content.LocalBroadcastManager.GetInstance(this). RegisterReceiver(receiver, new IntentFilter("com.xamarin.example.BLU"));
+            Android.Support.V4.Content.LocalBroadcastManager.GetInstance(this). RegisterReceiver(receiver, new IntentFilter("com.xamarin.example.BLU.Ui"));
 
             // Create BluetoothAdapterService connection
             if (serviceConnection == null)
@@ -98,6 +98,18 @@ namespace Blu
                     serviceConnection.EnumServices(deviceName);
                 }
             };
+        }
+    }
+
+    [BroadcastReceiver(Enabled = true, Exported = false)]
+    [IntentFilter(new[] { "com.xamarin.example.BLU.Ui" })]
+    public class SampleReceiver : BroadcastReceiver
+    {
+        public override void OnReceive(Context context, Intent intent)
+        {
+            // Do stuff here.
+
+            string value = intent.GetStringExtra("key");
         }
     }
 }

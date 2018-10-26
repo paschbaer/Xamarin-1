@@ -74,7 +74,7 @@ namespace Blu
                     gatt.Dispose();
                 }
 
-                gatt = device.ConnectGatt(ctx, false, gattdevice);  //-> OnConnectionStateChange() -> DiscoverServices() -> OnServicesDiscovered() -> GattDevice.Initialize()
+                gatt = device.ConnectGatt(ctx, false, gattdevice);  //-> gattdevice.OnConnectionStateChange() -> gatt.DiscoverServices() ->gattdevice.OnServicesDiscovered() -> gattdevice.StartInit()
                 if (gatt == null)
                 {
                     Log.Error(TAG, string.Format("failed to connect to GATT server '{0}'", identifer));
@@ -141,8 +141,15 @@ namespace Blu
         protected Context ctx;
         protected string gattServerName;
 
-        protected int idxService = 0; 
-        protected int idxCharacteristic = 0;
+        protected BluetoothGatt gatt { get; private set; }
+        protected BluetoothGattService service { get; private set; }
+
+        protected GattDeviceReceiver receiver;
+
+        public static string ACTION_START_ENUM_SERVICES = "START_ENUM_SERVICES";
+        public static string ACTION_ENUM_NEXT_SERVICE = "ENUM_NEXT_SERVICE";
+        public static string ACTION_READ_NEXT_CHARACTERISTIC = "READ_NEXT_CHARACTERISTIC";
+        public static string ACTION_ENUM_SERVICES_FINISHED = "ENUM_SERVICES_FINISHED";
 
         protected static Java.Util.UUID SERVICE_GENERIC_ACCESS = Java.Util.UUID.FromString("00001800-0000-1000-8000-00805f9b34fb");    //org.bluetooth.service.generic_access
 
@@ -150,38 +157,36 @@ namespace Blu
         {
             this.ctx = ctx;
             gattServerName = identifier;
-            idxService = 0;
-            idxCharacteristic = 0;
+
+            receiver = new GattDeviceReceiver(this);
+            Android.Support.V4.Content.LocalBroadcastManager.GetInstance(ctx).RegisterReceiver(receiver, new IntentFilter("com.xamarin.example.BLU.Device"));
         }
 
-        protected virtual void ReadFirstService(BluetoothGatt gatt)
+        protected virtual void StartInit(BluetoothGatt gatt)
         {
+            this.gatt = gatt;
+
             ListServices(gatt);
 
-            idxCharacteristic = 0;
-            BluetoothGattService service = gatt.Services[idxService];
-            ReadService(gatt, service);
+            UpdateDevice(ACTION_START_ENUM_SERVICES);
         }
 
-        public virtual void ReadNextService(BluetoothGatt gatt)
+        public void ReadService(int index)
         {
-            idxService++;
-            Log.Debug(TAG, "ReadNextService({0})", idxService);
-            if (idxService < gatt.Services.Count)
+            if ((gatt != null) && (index < gatt.Services.Count))
             {
-                BluetoothGattService service = gatt.Services[idxService];
+                service = gatt.Services[index];
                 ReadService(gatt, service);
             }
             else
             {
-                Log.Debug(TAG, "ReadNextService finished");
+                service = null;
+                UpdateDevice(ACTION_ENUM_SERVICES_FINISHED);
             }
-
         }
 
         protected void ReadService(BluetoothGatt gatt, BluetoothGattService service)
         {
-            idxCharacteristic = 0;
             Log.Debug(TAG, "ReadService(0x{0:X})", GetAssignedNumber(service.Uuid));
             if (service != null)
             {
@@ -194,7 +199,21 @@ namespace Blu
             }
         }
 
-        public void ReadCharacteristic(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic)
+        public void ReadCharacteristic(int index)
+        {
+            if ((gatt != null) && (service != null))
+            {
+                if (index < service.Characteristics.Count)
+                    ReadCharacteristic(gatt, service.Characteristics[index]);
+                else
+                {
+                    service = null;
+                    UpdateDevice(ACTION_ENUM_NEXT_SERVICE);
+                }
+            }
+        }
+
+        protected void ReadCharacteristic(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic)
         {
             BluetoothGattService service = characteristic.Service;
 
@@ -215,15 +234,7 @@ namespace Blu
                     GetAssignedNumber(characteristic.Uuid));
             }
 
-            idxCharacteristic++;
-            if (idxCharacteristic < characteristic.Service.Characteristics.Count)
-            {
-                BluetoothGattCharacteristic nextCharacteristic = service.Characteristics[idxCharacteristic];
-                Log.Debug(TAG, "ReadNextCharacteristic(0x{0:X})", GetAssignedNumber(nextCharacteristic.Uuid));
-                gatt.ReadCharacteristic(characteristic);
-            }
-            else
-                ReadNextService(gatt);
+            UpdateDevice(ACTION_READ_NEXT_CHARACTERISTIC);
         }
 
         protected static void ListServices(BluetoothGatt gatt)
@@ -315,8 +326,8 @@ namespace Blu
             if (status == GattStatus.Success)
             {
                 Log.Debug(TAG, string.Format("services of '{0}' successfully retrieved", gattServerName));
-                
-                System.Threading.ThreadPool.QueueUserWorkItem(o => ReadFirstService(gatt));
+
+                StartInit(gatt); //System.Threading.ThreadPool.QueueUserWorkItem(o => StartInit(gatt));
             }
             else if (status == GattStatus.Success)
                 Log.Error(TAG, string.Format("failed to retrieve services of '{0}'", gattServerName));
@@ -326,9 +337,35 @@ namespace Blu
 
         protected void UpdateUi(string key, string value)
         {// If desired, pass some values to the broadcast receiver.
-            Intent message = new Intent("com.xamarin.example.BLU");
+            Intent message = new Intent("com.xamarin.example.BLU.Ui");
  
             message.PutExtra(key, value);
+            Android.Support.V4.Content.LocalBroadcastManager.GetInstance(ctx).SendBroadcast(message);
+        }
+
+        protected void UpdateDevice(string action, string key = "", string value = "")
+        {// If desired, pass some values to the broadcast receiver.
+            Intent message = new Intent("com.xamarin.example.BLU.Device");
+
+            if (!string.IsNullOrEmpty(action))
+                message.SetAction(action);
+
+            if (!string.IsNullOrEmpty(key) && !string.IsNullOrEmpty(value))
+                message.PutExtra(key, value);
+
+            Android.Support.V4.Content.LocalBroadcastManager.GetInstance(ctx).SendBroadcast(message);
+        }
+
+        protected void UpdateDevice(string action, string key, int value)
+        {// If desired, pass some values to the broadcast receiver.
+            Intent message = new Intent("com.xamarin.example.BLU.Device");
+
+            if (!string.IsNullOrEmpty(action))
+                message.SetAction(action);
+
+            if (!string.IsNullOrEmpty(key))
+                message.PutExtra(key, value);
+
             Android.Support.V4.Content.LocalBroadcastManager.GetInstance(ctx).SendBroadcast(message);
         }
     }
@@ -381,5 +418,61 @@ namespace Blu
             return view;
         }
     }
-   
+
+
+    [BroadcastReceiver(Enabled = true, Exported = false)]
+    [IntentFilter(new[] { "com.xamarin.example.BLU.Device" })]
+    public class GattDeviceReceiver : BroadcastReceiver
+    {
+        protected GattDevice device;
+        protected int idxSvc;
+        protected int idxChar;
+
+        public GattDeviceReceiver()
+        {
+            this.device = null;
+            idxSvc = 0;
+            idxChar = 0;
+        }
+
+        public GattDeviceReceiver(GattDevice device)
+        {
+            this.device = device;
+            idxSvc = 0;
+            idxChar = 0;
+        }
+
+        public override void OnReceive(Context context, Intent intent)
+        {
+            if(intent.Action.Equals(GattDevice.ACTION_START_ENUM_SERVICES))
+            {
+                idxSvc = 0;
+                idxChar = 0;
+
+                if (device != null)
+                    device.ReadService(idxSvc++);
+            }
+
+            if (intent.Action.Equals(GattDevice.ACTION_ENUM_NEXT_SERVICE))
+            {
+                idxChar = 0;
+
+                if (device != null)
+                    device.ReadService(idxSvc++);
+            }
+
+            if (intent.Action.Equals(GattDevice.ACTION_READ_NEXT_CHARACTERISTIC))
+            {
+                if (device != null)
+                    device.ReadCharacteristic(idxChar++);
+            }
+
+            if (intent.Action.Equals(GattDevice.ACTION_ENUM_SERVICES_FINISHED))
+            {
+
+            }
+
+            //String value = intent.GetStringExtra("key");
+        }
+    }
 }
